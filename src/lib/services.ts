@@ -1,0 +1,330 @@
+export type ServiceCategory = {
+  slug: string;
+  name: string;
+  icon: string;
+  tagline: string;
+  items: string[];
+  keywords: string[];
+  baseLow: number;
+  baseHigh: number;
+};
+
+export const SERVICE_CATEGORIES: ServiceCategory[] = [
+  {
+    slug: "plumbing",
+    name: "Plumbing",
+    icon: "🚿",
+    tagline: "Leaks, geysers, drains and emergencies",
+    items: [
+      "Leak repairs",
+      "Burst pipes",
+      "Blocked drains",
+      "New installations",
+      "Geysers",
+      "Bathrooms",
+      "Toilets",
+      "Emergency plumbing",
+    ],
+    keywords: ["plumber", "leak", "tap", "geyser", "drain", "pipe", "toilet", "burst", "water"],
+    baseLow: 750,
+    baseHigh: 6500,
+  },
+  {
+    slug: "electrical",
+    name: "Electrical",
+    icon: "⚡",
+    tagline: "Certified sparkies, CoCs and load-shedding fixes",
+    items: [
+      "Fault finding",
+      "New wiring",
+      "Generators",
+      "Solar",
+      "Inverters",
+      "DB Boards",
+      "Lighting",
+      "Certificates of Compliance",
+    ],
+    keywords: ["electrician", "wiring", "db board", "coc", "plug", "inverter", "power", "lights", "trip"],
+    baseLow: 850,
+    baseHigh: 12000,
+  },
+  {
+    slug: "builders",
+    name: "Builders",
+    icon: "🧱",
+    tagline: "Renovations, extensions and structural work",
+    items: ["Bricklaying", "Renovations", "Boundary walls", "Concrete", "Extensions", "Foundations"],
+    keywords: ["builder", "brick", "renovation", "wall", "extension", "foundation", "concrete"],
+    baseLow: 8000,
+    baseHigh: 180000,
+  },
+  {
+    slug: "painters",
+    name: "Painters",
+    icon: "🎨",
+    tagline: "Interior, exterior and waterproof coatings",
+    items: ["Interior", "Exterior", "Roof painting", "Waterproofing"],
+    keywords: ["painter", "paint", "coating", "varnish", "waterproofing"],
+    baseLow: 2500,
+    baseHigh: 45000,
+  },
+  {
+    slug: "roofing",
+    name: "Roofing",
+    icon: "🏠",
+    tagline: "Roof repairs, ceilings and waterproofing",
+    items: ["Roof repairs", "Waterproofing", "Tile roofs", "Metal roofs", "Ceilings", "Gutters"],
+    keywords: ["roof", "ceiling", "gutter", "tiles", "leak roof", "waterproof"],
+    baseLow: 1800,
+    baseHigh: 65000,
+  },
+  {
+    slug: "garden-services",
+    name: "Garden Services",
+    icon: "🌿",
+    tagline: "Landscaping, tree felling and clean-ups",
+    items: ["Landscaping", "Grass cutting", "Tree felling", "Garden clean-up", "Irrigation"],
+    keywords: ["garden", "grass", "tree", "landscap", "irrigation", "lawn"],
+    baseLow: 450,
+    baseHigh: 15000,
+  },
+  {
+    slug: "cleaning",
+    name: "Cleaning",
+    icon: "🧼",
+    tagline: "Homes, offices and move-out deep cleans",
+    items: [
+      "House cleaning",
+      "Office cleaning",
+      "Move-out cleaning",
+      "Carpet cleaning",
+      "Window cleaning",
+      "Pressure washing",
+    ],
+    keywords: ["clean", "carpet", "window", "pressure wash", "deep clean", "maid"],
+    baseLow: 400,
+    baseHigh: 6000,
+  },
+  {
+    slug: "security",
+    name: "Security",
+    icon: "🛡️",
+    tagline: "Alarms, CCTV, electric fencing and gates",
+    items: ["Alarm installation", "Electric fencing", "CCTV", "Access control", "Garage doors"],
+    keywords: ["alarm", "cctv", "electric fence", "gate motor", "garage door", "access control", "security"],
+    baseLow: 1500,
+    baseHigh: 45000,
+  },
+  {
+    slug: "flooring",
+    name: "Flooring",
+    icon: "🧩",
+    tagline: "Tiles, vinyl, wood and epoxy finishes",
+    items: ["Tiles", "Vinyl", "Wood", "Epoxy", "Concrete polishing"],
+    keywords: ["floor", "tile", "vinyl", "laminate", "epoxy", "screed"],
+    baseLow: 2500,
+    baseHigh: 60000,
+  },
+  {
+    slug: "carpentry",
+    name: "Carpentry",
+    icon: "🪚",
+    tagline: "Cupboards, kitchens, decking and doors",
+    items: ["Cupboards", "Kitchen units", "Doors", "Decking", "Pergolas", "Furniture"],
+    keywords: ["carpenter", "cupboard", "kitchen", "door", "deck", "pergola", "wood work"],
+    baseLow: 2000,
+    baseHigh: 95000,
+  },
+  {
+    slug: "welding",
+    name: "Welding",
+    icon: "🔥",
+    tagline: "Gates, burglar bars and steel fabrication",
+    items: ["Security gates", "Burglar bars", "Steel fabrication", "Repairs"],
+    keywords: ["weld", "steel", "burglar bar", "gate", "fabricat", "metal"],
+    baseLow: 1200,
+    baseHigh: 40000,
+  },
+  {
+    slug: "air-conditioning",
+    name: "Air Conditioning",
+    icon: "❄️",
+    tagline: "Installation, servicing and repairs",
+    items: ["Installation", "Repairs", "Servicing"],
+    keywords: ["aircon", "air conditioning", "hvac", "cooling", "climate"],
+    baseLow: 950,
+    baseHigh: 25000,
+  },
+  {
+    slug: "appliance-repairs",
+    name: "Appliance Repairs",
+    icon: "🧺",
+    tagline: "Fridges, washers, ovens and TVs",
+    items: ["Fridges", "Washers", "Dishwashers", "TVs", "Ovens", "Microwaves"],
+    keywords: ["fridge", "washing machine", "dishwasher", "oven", "microwave", "tv repair", "appliance"],
+    baseLow: 550,
+    baseHigh: 6500,
+  },
+  {
+    slug: "glass-aluminium",
+    name: "Glass & Aluminium",
+    icon: "🪟",
+    tagline: "Windows, shower doors and shopfronts",
+    items: ["Windows", "Shower doors", "Mirrors", "Shopfronts"],
+    keywords: ["glass", "window", "shower door", "mirror", "aluminium", "shopfront"],
+    baseLow: 1200,
+    baseHigh: 38000,
+  },
+  {
+    slug: "paving",
+    name: "Paving",
+    icon: "🧱",
+    tagline: "Driveways, patios and walkways",
+    items: ["Driveways", "Patios", "Walkways"],
+    keywords: ["paving", "driveway", "patio", "walkway", "cobble"],
+    baseLow: 6000,
+    baseHigh: 90000,
+  },
+  {
+    slug: "solar",
+    name: "Solar",
+    icon: "🔆",
+    tagline: "Panels, batteries and hybrid systems",
+    items: ["Panels", "Battery systems", "Hybrid systems", "Maintenance"],
+    keywords: ["solar", "battery", "inverter", "pv", "hybrid", "off grid"],
+    baseLow: 18000,
+    baseHigh: 260000,
+  },
+  {
+    slug: "pools",
+    name: "Pools",
+    icon: "🏊",
+    tagline: "Cleaning, pumps and leak detection",
+    items: ["Cleaning", "Repairs", "Pump replacement", "Leak detection"],
+    keywords: ["pool", "pump", "chlorine", "filter", "swimming"],
+    baseLow: 650,
+    baseHigh: 28000,
+  },
+  {
+    slug: "pest-control",
+    name: "Pest Control",
+    icon: "🐜",
+    tagline: "Rodents, termites, bees and bird proofing",
+    items: ["Rodents", "Cockroaches", "Termites", "Bees", "Bird proofing"],
+    keywords: ["pest", "rat", "rodent", "cockroach", "termite", "bees", "fumigat"],
+    baseLow: 650,
+    baseHigh: 9000,
+  },
+  {
+    slug: "removals",
+    name: "Removals",
+    icon: "🚚",
+    tagline: "House moves, storage and packing",
+    items: ["House moves", "Furniture delivery", "Office relocation", "Storage", "Packing"],
+    keywords: ["removal", "moving", "move house", "transport", "relocat", "storage", "bakkie"],
+    baseLow: 1500,
+    baseHigh: 35000,
+  },
+  {
+    slug: "handyman",
+    name: "Handyman",
+    icon: "🧰",
+    tagline: "Odd jobs, mounting and assembly",
+    items: [
+      "Odd jobs",
+      "Furniture assembly",
+      "Curtains",
+      "Shelving",
+      "TV mounting",
+      "General maintenance",
+    ],
+    keywords: ["handyman", "odd job", "assembly", "curtain", "shelf", "tv mount", "small job"],
+    baseLow: 450,
+    baseHigh: 5500,
+  },
+  {
+    slug: "property-maintenance",
+    name: "Property Maintenance",
+    icon: "🏢",
+    tagline: "Rentals, body corporates and commercial",
+    items: [
+      "Rental maintenance",
+      "Body corporate maintenance",
+      "Commercial maintenance",
+      "Preventative maintenance",
+    ],
+    keywords: ["body corporate", "rental", "commercial", "property manage", "maintenance plan", "sectional title"],
+    baseLow: 2500,
+    baseHigh: 120000,
+  },
+  {
+    slug: "home-internet",
+    name: "Home Internet Setup",
+    icon: "🌐",
+    tagline: "Fibre, LTE, Wi-Fi and networking",
+    items: [
+      "Fibre installation",
+      "LTE/5G router setup",
+      "Wi-Fi coverage optimization",
+      "Mesh network installation",
+      "Network cabling",
+      "Router configuration",
+      "Speed testing & troubleshooting",
+      "Modem setup",
+      "Smart home networking",
+      "Backup internet solutions",
+    ],
+    keywords: [
+      "fibre", "fiber", "lte", "5g", "wifi", "wi-fi", "internet", "router", "modem", "network",
+      "mesh", "cable", "fibre installation", "vumatel", "openserve", "vumatel one", "mtn fibre",
+      "rain", "telkom", "mweb", "africom", "cybersmart",
+    ],
+    baseLow: 800,
+    baseHigh: 18000,
+  },
+];
+
+export const CATEGORY_BY_SLUG = new Map(SERVICE_CATEGORIES.map((c) => [c.slug, c]));
+
+export function categoryName(slug: string) {
+  return CATEGORY_BY_SLUG.get(slug)?.name ?? "General";
+}
+
+export function categoryIcon(slug: string) {
+  return CATEGORY_BY_SLUG.get(slug)?.icon ?? "🧰";
+}
+
+export const POPULAR_SEARCHES = [
+  "Plumber",
+  "Electrician",
+  "Painter",
+  "Roof Repair",
+  "Removal Company",
+  "Garden Service",
+  "Pest Control",
+  "Solar Installer",
+  "Pool Cleaning",
+];
+
+export const VERIFICATION_BADGES: Record<string, { label: string; icon: string; tone: string }> = {
+  identity: { label: "Identity Verified", icon: "🪪", tone: "navy" },
+  business: { label: "Business Registered", icon: "🏛️", tone: "navy" },
+  insurance: { label: "Insurance Verified", icon: "🛡️", tone: "teal" },
+  trade: { label: "Trade Qualified", icon: "📜", tone: "teal" },
+  police: { label: "Police Clearance", icon: "👮", tone: "green" },
+  background: { label: "Background Checked", icon: "✅", tone: "green" },
+  topRated: { label: "Top Rated", icon: "⭐", tone: "amber" },
+  fastResponse: { label: "Fast Response", icon: "⚡", tone: "amber" },
+  premium: { label: "Premium Provider", icon: "💎", tone: "navy" },
+};
+
+export const URGENCY_OPTIONS = [
+  { value: "emergency", label: "Emergency", hint: "Right now — within 2 hours", icon: "🚨" },
+  { value: "today", label: "Today", hint: "Sometime today", icon: "⏱️" },
+  { value: "this-week", label: "This Week", hint: "In the next 7 days", icon: "📅" },
+  { value: "flexible", label: "Flexible", hint: "I can wait for the best quote", icon: "🕊️" },
+];
+
+export function urgencyLabel(value: string) {
+  return URGENCY_OPTIONS.find((u) => u.value === value)?.label ?? "Flexible";
+}
