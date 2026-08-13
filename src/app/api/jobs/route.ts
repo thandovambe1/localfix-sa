@@ -4,7 +4,7 @@ import { broadcasts, jobs } from "@/db/schema";
 import { analyseJob, matchScore } from "@/lib/ai";
 import { findCity } from "@/lib/geo";
 import { jobReference, num } from "@/lib/format";
-import { getJobs, matchProviders, ready } from "@/lib/queries";
+import { getCustomer, getJobs, matchProviders, ready } from "@/lib/queries";
 import { getCustomerSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +20,25 @@ export async function POST(request: Request) {
 
   const title = String(body.title ?? "").trim();
   const description = String(body.description ?? "").trim();
-  const customerEmail = String(body.customerEmail ?? "").trim();
 
-  if (!title || !description || !customerEmail.includes("@")) {
-    return Response.json({ error: "Title, description and a valid email are required." }, { status: 400 });
+  if (!title || !description) {
+    return Response.json({ error: "Title and description are required." }, { status: 400 });
   }
+
+  // A booking can only be submitted by a signed-in customer — enforced on
+  // the server so the rule can't be bypassed by calling the API directly.
+  const session = await getCustomerSession();
+  if (!session) {
+    return Response.json(
+      { error: "Please sign in or create a free account before submitting a job request." },
+      { status: 401 },
+    );
+  }
+  const account = await getCustomer(session.id);
+  if (!account || account.status !== "active") {
+    return Response.json({ error: "Your account is not active." }, { status: 403 });
+  }
+  const customerEmail = account.email;
 
   const cityName = String(body.city ?? "Johannesburg");
   const city = findCity(cityName);
@@ -48,12 +62,10 @@ export async function POST(request: Request) {
   const urgency = String(body.urgency ?? "this-week");
   const deadlineHours = urgency === "emergency" ? 2 : urgency === "today" ? 6 : urgency === "this-week" ? 24 : 48;
 
-  const session = await getCustomerSession();
-
   const [job] = await db
     .insert(jobs)
     .values({
-      customerId: session?.id ?? null,
+      customerId: account.id,
       reference: jobReference(),
       categorySlug: ai.categorySlug,
       title,
@@ -70,9 +82,9 @@ export async function POST(request: Request) {
       contactMethod: String(body.contactMethod ?? "whatsapp"),
       preferredTimes: String(body.preferredTimes ?? ""),
       photos,
-      customerName: String(body.customerName ?? "Customer"),
+      customerName: String(body.customerName ?? account.name),
       customerEmail,
-      customerPhone: String(body.customerPhone ?? ""),
+      customerPhone: String(body.customerPhone ?? account.phone),
       aiSummary: ai.summary,
       aiComplexity: ai.complexity,
       aiBudgetLow: ai.budgetLow,
