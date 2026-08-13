@@ -96,9 +96,9 @@ export default function PostJobForm() {
 
   const canNext =
     step === 0
-      ? Boolean(form.categorySlug && form.title.trim().length > 3)
+      ? Boolean(form.categorySlug) // a clicked service icon is enough to continue
       : step === 1
-        ? form.description.trim().length > 10
+        ? form.title.trim().length > 3 && form.description.trim().length > 10
         : Boolean(form.customerName && form.customerEmail.includes("@"));
 
   async function submit() {
@@ -152,6 +152,21 @@ export default function PostJobForm() {
           ))}
         </ol>
 
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStep((s) => Math.max(0, s - 1))}
+            className="mb-5 inline-flex items-center gap-2 rounded-full border border-black/[0.06] bg-white px-4 py-2 text-sm font-semibold text-navy-700 shadow-sm transition hover:-translate-x-0.5 hover:border-teal-300 hover:text-teal-700"
+            aria-label={`Back to ${STEPS[step - 1]}`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
+            Back to {STEPS[step - 1]}
+          </button>
+        ) : null}
+
         {step === 0 ? (
           <div className="animate-fade-up">
             <h2 className="text-lg font-bold text-navy-800">What do you need done?</h2>
@@ -161,24 +176,43 @@ export default function PostJobForm() {
                 <button
                   key={c.slug}
                   type="button"
-                  onClick={() => set("categorySlug", c.slug)}
-                  className={`rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 ${
+                  aria-label={`Choose ${c.name} and continue to the job title`}
+                  onClick={() => {
+                    set("categorySlug", c.slug);
+                    setStep(1); // hyperlink behaviour: icon click jumps to the next step
+                  }}
+                  className={`group flex flex-col items-center rounded-2xl border p-4 text-center transition hover:-translate-y-0.5 ${
                     form.categorySlug === c.slug
                       ? "border-teal-400 bg-teal-50 shadow-[0_0_0_3px_rgba(15,158,153,0.12)]"
                       : "border-slate-200 bg-white hover:border-teal-200"
                   }`}
                 >
-                  <span className="text-xl" aria-hidden>
+                  <span className="text-2xl transition-transform group-hover:scale-110" aria-hidden>
                     {c.icon}
                   </span>
-                  <span className="mt-1 block text-xs font-bold text-navy-800">{c.name}</span>
+                  <span className="mt-1.5 block text-xs font-bold text-navy-800">{c.name}</span>
+                  <span className="mt-1 text-[10px] font-semibold text-teal-700 opacity-0 transition group-hover:opacity-100">
+                    Tap to continue →
+                  </span>
                 </button>
               ))}
             </div>
+            <p className="mt-4 text-center text-xs font-semibold text-slate-500">
+              👆 Click a service icon to continue to your job title.
+            </p>
+          </div>
+        ) : null}
 
-            <div className="mt-6">
+        {step === 1 ? (
+          <div className="animate-fade-up space-y-5">
+            <div className="rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-700">
+              {SERVICE_CATEGORIES.find((c) => c.slug === form.categorySlug)
+                ? `Great choice — ${SERVICE_CATEGORIES.find((c) => c.slug === form.categorySlug)?.icon} ${SERVICE_CATEGORIES.find((c) => c.slug === form.categorySlug)?.name}. Now give your job a short title.`
+                : "Give your job a short title."}
+            </div>
+            <div>
               <label className="label" htmlFor="title">
-                Job title
+                Job title <span className="text-bad">*</span>
               </label>
               <input
                 id="title"
@@ -186,13 +220,9 @@ export default function PostJobForm() {
                 value={form.title}
                 onChange={(e) => set("title", e.target.value)}
                 placeholder="e.g. Burst geyser flooding the ceiling"
+                autoFocus
               />
             </div>
-          </div>
-        ) : null}
-
-        {step === 1 ? (
-          <div className="animate-fade-up space-y-5">
             <div>
               <label className="label" htmlFor="description">
                 Describe the job
@@ -408,7 +438,12 @@ export default function PostJobForm() {
             className="btn btn-ghost"
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
+            aria-label="Go back to the previous step"
           >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+              <path d="M19 12H5" />
+              <path d="m12 19-7-7 7-7" />
+            </svg>
             Back
           </button>
           {step < 2 ? (
