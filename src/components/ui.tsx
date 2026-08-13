@@ -43,6 +43,7 @@ export function StatusPill({ status }: { status: string }) {
     completed: "bg-slate-100 text-slate-600",
     active: "bg-emerald-50 text-good",
     pending: "bg-amber-50 text-amber-700",
+    declined: "bg-red-50 text-bad",
     suspended: "bg-red-50 text-bad",
     submitted: "bg-navy-50 text-navy-700",
   };
