@@ -26,6 +26,52 @@ export default function PostJobForm() {
   const [ai, setAi] = useState<Ai | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
+  const [me, setMe] = useState<{ id: number; name: string; email: string } | null>(null);
+
+  // Auth check + draft restore: a signed-out customer can fill the whole
+  // form, and if they are sent to sign in / sign up, their answers come
+  // back with them via sessionStorage.
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d: { customer: { id: number; name: string; email: string } | null }) => {
+        if (!alive) return;
+        const c = d.customer;
+        setMe(c);
+        if (c) {
+          setForm((f) => ({
+            ...f,
+            customerName: f.customerName || c.name,
+            customerEmail: f.customerEmail || c.email,
+          }));
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!alive) return;
+        try {
+          const raw = sessionStorage.getItem("lfx_postjob_draft");
+          if (raw) {
+            const draft = JSON.parse(raw) as {
+              form?: Partial<Record<string, string>>;
+              photos?: string[];
+              step?: number;
+            };
+            if (draft.form) setForm((f) => ({ ...f, ...draft.form }));
+            if (Array.isArray(draft.photos)) setPhotos(draft.photos);
+            if (typeof draft.step === "number") setStep(draft.step);
+            sessionStorage.removeItem("lfx_postjob_draft");
+          }
+        } catch {
+          /* ignore bad draft */
+        }
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [form, setForm] = useState({
     categorySlug: params.get("category") ?? "",
@@ -102,6 +148,16 @@ export default function PostJobForm() {
         : Boolean(form.customerName && form.customerEmail.includes("@"));
 
   async function submit() {
+    // Booking can be completed only by a signed-in customer.
+    if (!me) {
+      try {
+        sessionStorage.setItem("lfx_postjob_draft", JSON.stringify({ form, photos, step }));
+      } catch {
+        /* storage unavailable — redirect anyway */
+      }
+      router.push("/login?next=/post-job");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -117,6 +173,17 @@ export default function PostJobForm() {
           lng: gps?.lng,
         }),
       });
+      if (res.status === 401) {
+        // Session expired between filling and submitting — keep the draft.
+        try {
+          sessionStorage.setItem("lfx_postjob_draft", JSON.stringify({ form, photos, step }));
+        } catch {
+          /* ignore */
+        }
+        setSubmitting(false);
+        router.push("/login?next=/post-job");
+        return;
+      }
       if (!res.ok) throw new Error("Could not submit your request");
       const data = (await res.json()) as { job: { id: number }; matched: number };
       await new Promise((r) => setTimeout(r, 2600));
@@ -430,6 +497,24 @@ export default function PostJobForm() {
           </div>
         ) : null}
 
+        {me ? (
+          <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-700">
+            ✓ Signed in as {me.name} — this request will be posted to your account.
+          </div>
+        ) : (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
+            🔐 Fill in as much as you like now — you&apos;ll need to{" "}
+            <a href="/login?next=/post-job" className="font-bold underline">
+              sign in
+            </a>{" "}
+            or{" "}
+            <a href="/register?next=/post-job" className="font-bold underline">
+              create a free account
+            </a>{" "}
+            before you can submit. Everything you enter is saved and waiting when you get back.
+          </div>
+        )}
+
         {error ? <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-bad">{error}</p> : null}
 
         <div className="mt-8 flex items-center justify-between gap-3">
@@ -460,7 +545,7 @@ export default function PostJobForm() {
             </button>
           ) : (
             <button type="button" className="btn btn-accent" disabled={!canNext} onClick={submit}>
-              Submit request
+              {me ? "Submit request" : "Continue — sign in to submit"}
             </button>
           )}
         </div>
