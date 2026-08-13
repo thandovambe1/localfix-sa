@@ -91,6 +91,39 @@ export default async function ProviderDashboard() {
         ))}
       </div>
 
+      {/* Application progress — mirrors the latest Founder/Admin decision, emailed to you too */}
+      {provider.status !== "active" ? (
+        <div
+          className={`mt-5 rounded-2xl border p-5 ${
+            provider.status === "declined"
+              ? "border-red-200 bg-red-50"
+              : provider.status === "suspended"
+                ? "border-red-200 bg-red-50"
+                : "border-amber-200 bg-amber-50"
+          }`}
+        >
+          <p className="text-sm font-extrabold text-navy-800">
+            {provider.status === "pending"
+              ? "📋 Application under review"
+              : provider.status === "declined"
+                ? "🚫 Application declined"
+                : "⛔ Account suspended"}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-slate-700">
+            {provider.status === "pending"
+              ? "Our Trust & Safety team is checking your documents. You'll be emailed the moment a decision is made."
+              : provider.status === "declined"
+                ? "We're unable to approve your application right now. See the note below or contact support."
+                : "Your account is currently suspended. Contact support for details."}
+          </p>
+          {provider.applicationNote ? (
+            <p className="mt-3 rounded-xl bg-white/70 px-4 py-3 text-sm text-slate-700">
+              <span className="font-bold text-navy-800">Note from our team:</span> {provider.applicationNote}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Pipeline value" value={zar(earnings)} hint="Accepted quotes" />
         <Stat label="Incoming leads" value={pipeline.incoming.length} hint="Awaiting your quote" />
