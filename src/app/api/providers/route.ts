@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { providerDocuments, providers } from "@/db/schema";
 import { getAdminSession, hashPassword } from "@/lib/auth";
+import { sendApplicationReceivedEmail } from "@/lib/email";
 import { findCity } from "@/lib/geo";
 import { getProviders, ready } from "@/lib/queries";
 
@@ -183,6 +184,13 @@ export async function POST(request: Request) {
     );
 
     return created;
+  });
+
+  // Let the applicant know their application is in the review queue.
+  void sendApplicationReceivedEmail({
+    to: provider.email,
+    businessName: provider.businessName,
+    ownerName: provider.ownerName,
   });
 
   return Response.json(
