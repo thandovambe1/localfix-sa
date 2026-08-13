@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import AdminActions from "@/components/admin-actions";
 import ProviderOpsEditor from "@/components/provider-ops-editor";
 import ProviderDocumentReview from "@/components/provider-document-review";
 import { Stat, StatusPill, VerificationBadge } from "@/components/ui";
@@ -74,15 +73,22 @@ export default async function AdminProvidersPage() {
                 </div>
               </div>
 
-              <AdminActions providerId={p.id} status={p.status} />
+              <Link href={`/admin/applications/${p.id}`} className="btn btn-accent !px-4 !py-2 text-xs">
+                📂 Review full application
+              </Link>
             </div>
 
             <details className="group mt-4">
               <summary className="cursor-pointer list-none text-xs font-bold text-teal-700 hover:underline">
-                ▸ Review compliance, plan &amp; coverage
+                ▸ Quick compliance, plan &amp; coverage
               </summary>
               <ProviderDocumentReview providerId={p.id} />
               <ProviderOpsEditor provider={{ id: p.id, businessName: p.businessName, plan: p.plan, provinces: p.provinces }} />
+              <div className="mt-3">
+                <Link href={`/admin/applications/${p.id}`} className="btn btn-ghost !px-4 !py-2 text-xs">
+                  Open full application with downloads &amp; decision →
+                </Link>
+              </div>
             </details>
           </article>
         ))}
