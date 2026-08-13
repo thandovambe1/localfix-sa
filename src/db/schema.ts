@@ -47,6 +47,9 @@ export const providers = pgTable("providers", {
   status: text("status").notNull().default("pending"),
   plan: text("plan").notNull().default("free"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  applicationNote: text("application_note"),
+  applicationDecidedBy: text("application_decided_by"),
+  applicationDecidedAt: timestamp("application_decided_at", { withTimezone: true }),
 });
 
 /**
