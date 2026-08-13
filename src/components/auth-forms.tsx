@@ -84,7 +84,10 @@ export function CustomerLoginForm({ next }: { next?: string }) {
         <span className="text-slate-300" aria-hidden>|</span>
         <span className="text-slate-600">
           New to LocalFix?{" "}
-          <Link href="/register" className="font-semibold text-teal-700 hover:underline">
+          <Link
+            href={next && next.startsWith("/") ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+            className="font-semibold text-teal-700 hover:underline"
+          >
             Create a free account
           </Link>
         </span>
@@ -93,7 +96,7 @@ export function CustomerLoginForm({ next }: { next?: string }) {
   );
 }
 
-export function CustomerRegisterForm() {
+export function CustomerRegisterForm({ next }: { next?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -132,7 +135,7 @@ export function CustomerRegisterForm() {
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Registration failed");
-      router.push("/dashboard/customer?welcome=1");
+      router.push(next && next.startsWith("/") ? next : "/dashboard/customer?welcome=1");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
