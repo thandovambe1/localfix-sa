@@ -68,8 +68,8 @@ export default async function JobPage({
             ✅ Job broadcast to {job.broadcastCount} verified professionals near {job.suburb || job.city}.
           </p>
           <p className="mt-1 text-xs text-emerald-800">
-            We&apos;ll notify you by {job.contactMethod} the moment quotes arrive. Most customers receive their first
-            quote within 18 minutes.
+            📧 A confirmation email has been sent to {job.customerEmail}. We&apos;ll also notify you by{" "}
+            {job.contactMethod} the moment quotes arrive — most customers receive their first quote within 18 minutes.
           </p>
         </div>
       ) : null}
