@@ -199,8 +199,3 @@ export function verifyWebhookSignature(
   // For now, accept — Yoco's webhook signature verification would go here
   return true;
 }
-
-  // In production with a webhook secret, you'd verify HMAC-SHA256 here
-  // For now, accept — Yoco's webhook signature verification would go here
-  return true;
-}
