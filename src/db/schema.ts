@@ -46,10 +46,11 @@ export const providers = pgTable("providers", {
   logoUrl: text("logo_url"),
   status: text("status").notNull().default("pending"),
   plan: text("plan").notNull().default("free"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  applicationNote: text("application_note"),
+  /** Latest decision note from Founder/Admin, shared with the applicant by email. */
+  applicationNote: text("application_note").notNull().default(""),
   applicationDecidedBy: text("application_decided_by"),
   applicationDecidedAt: timestamp("application_decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /**
