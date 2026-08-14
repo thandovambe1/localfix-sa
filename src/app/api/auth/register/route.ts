@@ -13,6 +13,7 @@ export async function POST(request: Request) {
   const name = String(body.name ?? "").trim();
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
+  const confirmPassword = String(body.confirmPassword ?? "");
   const phone = String(body.phone ?? "").trim();
   const province = String(body.province ?? "").trim();
   const city = String(body.city ?? "").trim();
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
   }
   if (password.length < 8) {
     return Response.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+  }
+  if (confirmPassword && password !== confirmPassword) {
+    return Response.json({ error: "Passwords do not match." }, { status: 400 });
   }
 
   const existing = await db
