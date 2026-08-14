@@ -50,10 +50,16 @@ create table if not exists providers (
   logo_url text,
   status text not null default 'pending',
   plan text not null default 'free',
+  application_note text not null default '',
+  application_decided_by text,
+  application_decided_at timestamptz,
   created_at timestamptz not null default now()
 );
 alter table providers add column if not exists logo_url text;
 alter table providers add column if not exists password_hash text;
+alter table providers add column if not exists application_note text not null default '';
+alter table providers add column if not exists application_decided_by text;
+alter table providers add column if not exists application_decided_at timestamptz;
 create unique index if not exists providers_email_idx on providers (lower(email));
 
 create table if not exists provider_documents (
