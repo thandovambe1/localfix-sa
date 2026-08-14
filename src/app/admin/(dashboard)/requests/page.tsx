@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { StatusPill, Stat } from "@/components/ui";
+import AdminRequestActions from "@/components/admin-request-actions";
 import { getJobsDetailed } from "@/lib/queries";
 import { categoryIcon, categoryName, urgencyLabel } from "@/lib/services";
 import { shortDate, timeAgo, zar } from "@/lib/format";
+import { getAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Job requests", robots: { index: false } };
@@ -26,6 +28,8 @@ export default async function AdminRequestsPage({
   const sp = await searchParams;
   const jobs = await getJobsDetailed({ status: sp.status || undefined });
   const all = await getJobsDetailed();
+  const session = await getAdminSession();
+  const isUltimateControl = session && (session.role === "owner" || session.role === "admin");
 
   const emergencies = all.filter((j) => j.urgency === "emergency" && j.status === "open").length;
   const unquoted = all.filter((j) => j.quoteCount === 0 && j.status === "open").length;
@@ -121,14 +125,21 @@ export default async function AdminRequestsPage({
               <Cell label="Quote deadline" value={j.quoteDeadline ? shortDate(j.quoteDeadline) : "—"} />
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href={`/jobs/${j.id}`} className="btn btn-ghost !px-4 !py-2 text-xs">
-                View full request
-              </Link>
-              {j.quoteCount === 0 && j.status === "open" ? (
-                <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
-                  ⚠️ Needs attention — no quotes received
-                </span>
+             <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3.5">
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/jobs/${j.id}`} className="btn btn-ghost !px-4 !py-2 text-xs">
+                  View full request
+                </Link>
+                {j.quoteCount === 0 && j.status === "open" ? (
+                  <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
+                    ⚠️ Needs attention — no quotes received
+                  </span>
+                ) : null}
+              </div>
+              {isUltimateControl ? (
+                <div className="flex items-center gap-2">
+                  <AdminRequestActions jobId={j.id} reference={j.reference} />
+                </div>
               ) : null}
             </div>
           </article>
