@@ -3,9 +3,11 @@ import { db } from "@/db";
 import { broadcasts, jobs } from "@/db/schema";
 import { analyseJob, matchScore } from "@/lib/ai";
 import { findCity } from "@/lib/geo";
-import { jobReference, num } from "@/lib/format";
+import { jobReference, num, zar } from "@/lib/format";
 import { getCustomer, getJobs, matchProviders, ready } from "@/lib/queries";
 import { getCustomerSession } from "@/lib/auth";
+import { sendJobConfirmationEmail } from "@/lib/email";
+import { categoryName, urgencyLabel } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
 
@@ -121,5 +123,25 @@ export async function POST(request: Request) {
       .where(eq(jobs.id, job.id));
   }
 
-  return Response.json({ job, matched: matches.length, ai }, { status: 201 });
+  // Send the customer a real confirmation email that the job was requested
+  // and broadcast. Non-blocking: emailing must never fail the request.
+  const emailResult = await sendJobConfirmationEmail({
+    to: customerEmail,
+    customerName: account.name,
+    reference: job.reference,
+    jobId: job.id,
+    title,
+    categoryName: categoryName(ai.categorySlug),
+    urgencyLabel: urgencyLabel(urgency),
+    city: job.city,
+    suburb: job.suburb,
+    budget: budgetMin || budgetMax ? `${zar(budgetMin)} – ${zar(budgetMax)}` : undefined,
+    fairRange: `${zar(ai.budgetLow)} – ${zar(ai.budgetHigh)}`,
+    matched: Math.min(matches.length, 25),
+  }).catch(() => ({ ok: false as const, error: "Email dispatch failed" }));
+
+  return Response.json(
+    { job, matched: matches.length, ai, emailSent: emailResult.ok },
+    { status: 201 },
+  );
 }
