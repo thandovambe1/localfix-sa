@@ -106,6 +106,7 @@ export function CustomerRegisterForm({ next }: { next?: string }) {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     province: "Gauteng",
     city: "Johannesburg",
     suburb: "",
@@ -122,21 +123,42 @@ export function CustomerRegisterForm({ next }: { next?: string }) {
       setError("Password must be at least 8 characters.");
       return;
     }
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!form.firstName.trim() || !form.surname.trim()) {
+      setError("Enter both your first name and surname.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
           name: `${form.firstName.trim()} ${form.surname.trim()}`.trim(),
         }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Registration failed");
-      router.push(next && next.startsWith("/") ? next : "/dashboard/customer?welcome=1");
+
+      // Confirm the auth cookie landed before navigating.
+      const me = await fetch("/api/auth/me", { credentials: "same-origin" })
+        .then((r) => r.json())
+        .catch(() => ({ customer: null }));
+      if (!me.customer) throw new Error("Your account was created, but sign-in could not be confirmed. Please try logging in.");
+
+      const destination = next && next.startsWith("/") ? next : "/dashboard/customer?welcome=1";
+      router.push(destination);
       router.refresh();
+      // Hard fallback for production browsers in case SPA navigation is interrupted.
+      setTimeout(() => {
+        window.location.assign(destination);
+      }, 150);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
       setBusy(false);
@@ -210,21 +232,39 @@ export function CustomerRegisterForm({ next }: { next?: string }) {
           </div>
         </div>
 
-        <div>
-          <label className="label" htmlFor="reg-password">
-            Password *
-          </label>
-          <input
-            id="reg-password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className="input"
-            value={form.password}
-            onChange={(e) => set("password", e.target.value)}
-            placeholder="At least 8 characters"
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label" htmlFor="reg-password">
+              Password <span className="text-bad">*</span>
+            </label>
+            <input
+              id="reg-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="input"
+              value={form.password}
+              onChange={(e) => set("password", e.target.value)}
+              placeholder="At least 8 characters"
+            />
+          </div>
+          <div>
+            <label className="label" htmlFor="reg-confirm-password">
+              Confirm password <span className="text-bad">*</span>
+            </label>
+            <input
+              id="reg-confirm-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="input"
+              value={form.confirmPassword}
+              onChange={(e) => set("confirmPassword", e.target.value)}
+              placeholder="Repeat password"
+            />
+          </div>
         </div>
 
         <div className="pt-2">
@@ -337,7 +377,10 @@ export function CustomerRegisterForm({ next }: { next?: string }) {
 
       <p className="mt-4 text-center text-sm text-slate-600">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-teal-700 hover:underline">
+        <Link
+          href={next && next.startsWith("/") ? `/login?next=${encodeURIComponent(next)}` : "/login"}
+          className="font-semibold text-teal-700 hover:underline"
+        >
           Sign in
         </Link>
       </p>
