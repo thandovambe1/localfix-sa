@@ -66,7 +66,7 @@ function renderSocialIcon(key: string) {
 
 export default function SiteFooter() {
   return (
-    <footer className="relative mt-20 overflow-hidden bg-[#0d1b30] text-slate-300">
+    <footer className="relative mt-20 overflow-hidden bg-[#0d1b30] text-slate-300 print:hidden">
       {/* Top accent rule */}
       <div className="h-1 w-full bg-gradient-to-r from-navy-600 via-[#0f9c96] to-navy-600" aria-hidden />
 
