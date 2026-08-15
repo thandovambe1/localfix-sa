@@ -1,6 +1,17 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { auditLogs, broadcasts, inboxMessages, jobs, messages, payments, quotes } from "@/db/schema";
+import {
+  auditLogs,
+  broadcasts,
+  inboxMessages,
+  jobCardCorrections,
+  jobCards,
+  jobSignatures,
+  jobs,
+  messages,
+  payments,
+  quotes,
+} from "@/db/schema";
 import { getAdminSession } from "@/lib/auth";
 import { ready } from "@/lib/queries";
 
@@ -39,6 +50,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   await db.transaction(async (tx) => {
     // Delete all related records first to maintain referential integrity
+    await tx.delete(jobCardCorrections).where(eq(jobCardCorrections.jobId, jobId));
+    await tx.delete(jobSignatures).where(eq(jobSignatures.jobId, jobId));
+    await tx.delete(jobCards).where(eq(jobCards.jobId, jobId));
     await tx.delete(quotes).where(eq(quotes.jobId, jobId));
     await tx.delete(broadcasts).where(eq(broadcasts.jobId, jobId));
     await tx.delete(messages).where(eq(messages.jobId, jobId));
