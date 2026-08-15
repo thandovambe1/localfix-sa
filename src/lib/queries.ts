@@ -6,6 +6,8 @@ import {
   broadcasts,
   customers,
   inboxMessages,
+  jobCards,
+  jobSignatures,
   jobs,
   messages,
   payments,
@@ -258,11 +260,19 @@ export async function getJobsForCustomer(customerId: number, email?: string) {
   );
   if (!mine.length) return [];
 
-  const allQuotes = await db.select().from(quotes);
+  const [allQuotes, cards] = await Promise.all([
+    db.select().from(quotes),
+    db.select({ jobId: jobCards.jobId, status: jobCards.status, locked: jobCards.locked }).from(jobCards),
+  ]);
   const countByJob = new Map<number, number>();
   for (const q of allQuotes) countByJob.set(q.jobId, (countByJob.get(q.jobId) ?? 0) + 1);
+  const cardByJob = new Map(cards.map((card) => [card.jobId, card]));
 
-  return mine.map((j) => ({ ...j, quoteCount: countByJob.get(j.id) ?? 0 }));
+  return mine.map((j) => ({
+    ...j,
+    quoteCount: countByJob.get(j.id) ?? 0,
+    jobCard: cardByJob.get(j.id) ?? null,
+  }));
 }
 
 /** All customers with job counts and spend, for the admin console. */
@@ -368,7 +378,11 @@ export async function getJobsDetailed(filters: { status?: string } = {}) {
   const filtered = rows.filter((j) => (filters.status ? j.status === filters.status : true));
   if (!filtered.length) return [];
 
-  const allQuotes = await db.select().from(quotes);
+  const [allQuotes, cards, signatures] = await Promise.all([
+    db.select().from(quotes),
+    db.select().from(jobCards),
+    db.select().from(jobSignatures),
+  ]);
   const countByJob = new Map<number, number>();
   const bestByJob = new Map<number, number>();
   for (const q of allQuotes) {
@@ -377,11 +391,20 @@ export async function getJobsDetailed(filters: { status?: string } = {}) {
     if (current === undefined || q.amount < current) bestByJob.set(q.jobId, q.amount);
   }
 
-  return filtered.map((j) => ({
-    ...j,
-    quoteCount: countByJob.get(j.id) ?? 0,
-    bestQuote: bestByJob.get(j.id) ?? null,
-  }));
+  const cardByJob = new Map(cards.map((card) => [card.jobId, card]));
+  const sigByCardRole = new Map(signatures.map((sig) => [`${sig.jobCardId}:${sig.signerRole}`, sig]));
+
+  return filtered.map((j) => {
+    const card = cardByJob.get(j.id) ?? null;
+    return {
+      ...j,
+      quoteCount: countByJob.get(j.id) ?? 0,
+      bestQuote: bestByJob.get(j.id) ?? null,
+      jobCard: card,
+      providerSignature: card ? sigByCardRole.get(`${card.id}:provider`) ?? null : null,
+      customerSignature: card ? sigByCardRole.get(`${card.id}:customer`) ?? null : null,
+    };
+  });
 }
 
 export async function getPaymentStats() {
