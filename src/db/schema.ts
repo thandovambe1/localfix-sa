@@ -3,10 +3,12 @@ import {
   integer,
   jsonb,
   numeric,
+  index,
   pgTable,
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const providers = pgTable("providers", {
@@ -120,6 +122,80 @@ export const quotes = pgTable("quotes", {
   status: text("status").notNull().default("submitted"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Digital Job Card created only when the accepted provider submits real
+ * completion details. Historical jobs remain valid without a card.
+ */
+export const jobCards = pgTable(
+  "job_cards",
+  {
+    id: serial("id").primaryKey(),
+    jobId: integer("job_id").notNull(),
+    quoteId: integer("quote_id").notNull(),
+    providerId: integer("provider_id").notNull(),
+    customerId: integer("customer_id").notNull(),
+    documentReference: text("document_reference").notNull(),
+    workCompleted: text("work_completed").notNull(),
+    materialsUsed: text("materials_used").notNull().default(""),
+    additionalNotes: text("additional_notes").notNull().default(""),
+    completionPhotos: jsonb("completion_photos").$type<string[]>().notNull().default([]),
+    /** Immutable accepted quote total, stored in ZAR cents. */
+    finalAmountCents: integer("final_amount_cents").notNull(),
+    /** awaiting_provider_signature | awaiting_customer_signature | completed */
+    status: text("status").notNull().default("awaiting_provider_signature"),
+    locked: boolean("locked").notNull().default(false),
+    integrityHash: text("integrity_hash"),
+    providerSubmittedAt: timestamp("provider_submitted_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("job_cards_job_unique").on(table.jobId),
+    uniqueIndex("job_cards_document_reference_unique").on(table.documentReference),
+    index("job_cards_provider_idx").on(table.providerId),
+    index("job_cards_customer_idx").on(table.customerId),
+  ],
+);
+
+/** Exactly one independently drawn electronic signature per role/card. */
+export const jobSignatures = pgTable(
+  "job_signatures",
+  {
+    id: serial("id").primaryKey(),
+    jobCardId: integer("job_card_id").notNull(),
+    jobId: integer("job_id").notNull(),
+    signerId: integer("signer_id").notNull(),
+    /** provider | customer */
+    signerRole: text("signer_role").notNull(),
+    signerName: text("signer_name").notNull(),
+    signatureData: text("signature_data").notNull(),
+    confirmationText: text("confirmation_text").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    signedAt: timestamp("signed_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("job_signatures_card_role_unique").on(table.jobCardId, table.signerRole),
+    index("job_signatures_job_idx").on(table.jobId),
+  ],
+);
+
+/** Append-only correction annotations; signed content itself is never edited. */
+export const jobCardCorrections = pgTable(
+  "job_card_corrections",
+  {
+    id: serial("id").primaryKey(),
+    jobCardId: integer("job_card_id").notNull(),
+    jobId: integer("job_id").notNull(),
+    note: text("note").notNull(),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("job_card_corrections_card_idx").on(table.jobCardId)],
+);
 
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
@@ -387,6 +463,9 @@ export type Provider = typeof providers.$inferSelect;
 export type ProviderDocument = typeof providerDocuments.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
+export type JobCard = typeof jobCards.$inferSelect;
+export type JobSignature = typeof jobSignatures.$inferSelect;
+export type JobCardCorrection = typeof jobCardCorrections.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Broadcast = typeof broadcasts.$inferSelect;
