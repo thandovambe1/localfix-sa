@@ -17,6 +17,8 @@ const FILTERS = [
   { key: "accepted", label: "🤝 Accepted" },
   { key: "payment_pending", label: "⏳ Awaiting payment" },
   { key: "in_progress", label: "🔧 In progress" },
+  { key: "awaiting_provider_signature", label: "✍️ Provider signature" },
+  { key: "awaiting_customer_signature", label: "✍️ Customer signature" },
   { key: "completed", label: "✅ Completed" },
 ];
 
@@ -118,11 +120,13 @@ export default async function AdminRequestsPage({
               </div>
             </div>
 
-            <div className="mt-4 grid gap-2 sm:grid-cols-4">
+            <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
               <Cell label="Broadcast to" value={`${j.broadcastCount} pros`} />
               <Cell label="Quotes" value={String(j.quoteCount)} highlight={j.quoteCount > 0} />
               <Cell label="Best quote" value={j.bestQuote ? zar(j.bestQuote) : "—"} />
-              <Cell label="Quote deadline" value={j.quoteDeadline ? shortDate(j.quoteDeadline) : "—"} />
+              <Cell label="Job Card" value={j.jobCard?.status.replace(/_/g, " ") ?? "Not started"} highlight={Boolean(j.jobCard)} />
+              <Cell label="Provider signature" value={j.providerSignature ? shortDate(j.providerSignature.signedAt) : "Not signed"} />
+              <Cell label="Customer signature" value={j.customerSignature ? shortDate(j.customerSignature.signedAt) : "Not signed"} />
             </div>
 
              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3.5">
@@ -130,6 +134,16 @@ export default async function AdminRequestsPage({
                 <Link href={`/jobs/${j.id}`} className="btn btn-ghost !px-4 !py-2 text-xs">
                   View full request
                 </Link>
+                {j.jobCard ? (
+                  <Link href={`/job-cards/${j.id}`} className="btn btn-ghost !px-4 !py-2 text-xs">
+                    View Job Card
+                  </Link>
+                ) : null}
+                {j.jobCard?.locked ? (
+                  <a href={`/api/job-cards/${j.id}/pdf`} className="btn btn-accent !px-4 !py-2 text-xs">
+                    Download Signed PDF
+                  </a>
+                ) : null}
                 {j.quoteCount === 0 && j.status === "open" ? (
                   <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
                     ⚠️ Needs attention — no quotes received
