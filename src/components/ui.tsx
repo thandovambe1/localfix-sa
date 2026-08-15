@@ -40,6 +40,8 @@ export function StatusPill({ status }: { status: string }) {
     open: "bg-teal-50 text-teal-700",
     quoted: "bg-amber-50 text-amber-700",
     accepted: "bg-emerald-50 text-good",
+    awaiting_provider_signature: "bg-navy-50 text-navy-700",
+    awaiting_customer_signature: "bg-amber-50 text-amber-700",
     completed: "bg-slate-100 text-slate-600",
     active: "bg-emerald-50 text-good",
     pending: "bg-amber-50 text-amber-700",
