@@ -124,6 +124,58 @@ create table if not exists quotes (
   created_at timestamptz not null default now()
 );
 
+create table if not exists job_cards (
+  id serial primary key,
+  job_id integer not null,
+  quote_id integer not null,
+  provider_id integer not null,
+  customer_id integer not null,
+  document_reference text not null,
+  work_completed text not null,
+  materials_used text not null default '',
+  additional_notes text not null default '',
+  completion_photos jsonb not null default '[]'::jsonb,
+  final_amount_cents integer not null,
+  status text not null default 'awaiting_provider_signature',
+  locked boolean not null default false,
+  integrity_hash text,
+  provider_submitted_at timestamptz not null default now(),
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists job_cards_job_unique on job_cards (job_id);
+create unique index if not exists job_cards_document_reference_unique on job_cards (document_reference);
+create index if not exists job_cards_provider_idx on job_cards (provider_id);
+create index if not exists job_cards_customer_idx on job_cards (customer_id);
+
+create table if not exists job_signatures (
+  id serial primary key,
+  job_card_id integer not null,
+  job_id integer not null,
+  signer_id integer not null,
+  signer_role text not null,
+  signer_name text not null,
+  signature_data text not null,
+  confirmation_text text not null,
+  ip_address text,
+  user_agent text,
+  signed_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+create unique index if not exists job_signatures_card_role_unique on job_signatures (job_card_id, signer_role);
+create index if not exists job_signatures_job_idx on job_signatures (job_id);
+
+create table if not exists job_card_corrections (
+  id serial primary key,
+  job_card_id integer not null,
+  job_id integer not null,
+  note text not null,
+  created_by text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists job_card_corrections_card_idx on job_card_corrections (job_card_id);
+
 create table if not exists reviews (
   id serial primary key,
   provider_id integer not null,
