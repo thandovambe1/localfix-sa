@@ -136,29 +136,42 @@ export default async function CustomerDashboard({
                   and get quotes in minutes.
                 </div>
               ) : null}
-              {active.map((j) => (
-                <Link key={j.id} href={`/jobs/${j.id}`} className="card card-hover block p-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="chip">
-                      <span aria-hidden>{categoryIcon(j.categorySlug)}</span>
-                      {categoryName(j.categorySlug)}
-                    </span>
-                    <StatusPill status={j.status} />
-                    <span className="chip !bg-amber-50 !text-amber-700">{urgencyLabel(j.urgency)}</span>
-                    <span className="ml-auto text-xs text-slate-400">{timeAgo(j.createdAt)}</span>
-                  </div>
-                  <h3 className="mt-3 text-base font-bold text-navy-800">{j.title}</h3>
-                  <p className="text-xs text-slate-500">
-                    {j.reference} · {j.suburb || j.city} · {j.broadcastCount} pros notified
-                  </p>
-                  <p className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-                    <span className="font-bold text-teal-700">{j.quoteCount} quotes received</span>
-                    <span className="text-slate-500">
-                      Budget {j.budgetMin || j.budgetMax ? `${zar(j.budgetMin)} – ${zar(j.budgetMax)}` : "open"}
-                    </span>
-                  </p>
-                </Link>
-              ))}
+              {active.map((j) => {
+                const cardAction = j.status === "awaiting_customer_signature" || j.status === "awaiting_provider_signature";
+                const href = cardAction ? `/job-cards/${j.id}` : `/jobs/${j.id}`;
+                return (
+                  <article key={j.id} className={`card card-hover p-5 ${j.status === "awaiting_customer_signature" ? "ring-2 ring-teal-300" : ""}`}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="chip">
+                        <span aria-hidden>{categoryIcon(j.categorySlug)}</span>
+                        {categoryName(j.categorySlug)}
+                      </span>
+                      <StatusPill status={j.status} />
+                      <span className="chip !bg-amber-50 !text-amber-700">{urgencyLabel(j.urgency)}</span>
+                      <span className="ml-auto text-xs text-slate-400">{timeAgo(j.createdAt)}</span>
+                    </div>
+                    <h3 className="mt-3 text-base font-bold text-navy-800">{j.title}</h3>
+                    <p className="text-xs text-slate-500">
+                      {j.reference} · {j.suburb || j.city} · {j.broadcastCount} pros notified
+                    </p>
+                    <p className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                      <span className="font-bold text-teal-700">{j.quoteCount} quotes received</span>
+                      <span className="text-slate-500">
+                        Budget {j.budgetMin || j.budgetMax ? `${zar(j.budgetMin)} – ${zar(j.budgetMax)}` : "open"}
+                      </span>
+                    </p>
+                    <div className="mt-4">
+                      <Link href={href} className={`btn !px-4 !py-2 text-sm ${j.status === "awaiting_customer_signature" ? "btn-accent" : "btn-ghost"}`}>
+                        {j.status === "awaiting_customer_signature"
+                          ? "Action Required — Sign Job Card"
+                          : j.status === "awaiting_provider_signature"
+                            ? "View Job Card — Provider Signing"
+                            : "View Job"}
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
@@ -167,7 +180,7 @@ export default async function CustomerDashboard({
               <h2 className="text-lg font-bold text-navy-800">Completed jobs</h2>
               <div className="mt-4 space-y-3">
                 {completed.map((j) => (
-                  <Link key={j.id} href={`/jobs/${j.id}`} className="card card-hover flex flex-wrap items-center gap-3 p-5">
+                  <article key={j.id} className="card card-hover flex flex-wrap items-center gap-3 p-5">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-navy-800">{j.title}</span>
                       <span className="text-xs text-slate-500">
@@ -175,7 +188,10 @@ export default async function CustomerDashboard({
                       </span>
                     </span>
                     <StatusPill status={j.status} />
-                  </Link>
+                    <Link href={j.jobCard ? `/job-cards/${j.id}` : `/jobs/${j.id}`} className="btn btn-ghost !px-4 !py-2 text-sm">
+                      {j.jobCard ? "View Job Card" : "View Historical Job"}
+                    </Link>
+                  </article>
                 ))}
               </div>
             </section>
