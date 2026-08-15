@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { QuoteForm } from "@/components/job-client";
 import { PaymentStatusBadge } from "@/components/payment-section";
+import ProviderSignOut from "@/components/provider-sign-out";
 import RequestPayout from "@/components/request-payout";
 import { Stat, StatusPill, VerificationBadge, Stars } from "@/components/ui";
 import { getProvider, getProviderPipeline, getProviderReviews, getPaymentsByProvider } from "@/lib/queries";
@@ -80,9 +81,12 @@ export default async function ProviderDashboard() {
             {provider.city}, {provider.province} · {provider.serviceRadiusKm} km radius · {provider.plan} plan
           </p>
         </div>
-        <Link href="/provider/forgot-password" className="btn btn-ghost !px-4 !py-2 text-sm">
-          Change password
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/provider/forgot-password" className="btn btn-ghost !px-4 !py-2 text-sm">
+            Change password
+          </Link>
+          <ProviderSignOut />
+        </div>
       </header>
 
       <div className="mt-4 flex flex-wrap gap-1.5">
