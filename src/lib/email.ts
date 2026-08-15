@@ -173,6 +173,51 @@ export async function sendJobConfirmationEmail(input: {
   });
 }
 
+export async function sendJobCardAwaitingCustomerEmail(input: {
+  to: string;
+  customerName: string;
+  jobReference: string;
+  jobId: number;
+}) {
+  const name = input.customerName.split(/\s+/)[0] || "there";
+  return sendMail({
+    to: input.to,
+    subject: `Signature required — LocalFix job card ${input.jobReference}`,
+    text: `Hi ${name},\n\nYour LocalFix SA job card is ready for review and signature. The provider has recorded the work completed and signed independently.\n\nReview and sign it here: ${baseUrl()}/job-cards/${input.jobId}\n\nSigning confirms that you reviewed and acknowledge the completion information.\n\nThe LocalFix SA team`,
+    html: `<div style="font-family:Arial,sans-serif;color:#0c2f5f;max-width:560px"><h2>Job Card Awaiting Your Signature</h2><p>Hi ${name},</p><p>Your provider has completed and signed the Digital Job Card for <strong>${input.jobReference}</strong>.</p><p><a href="${baseUrl()}/job-cards/${input.jobId}" style="display:inline-block;background:#0f9c96;color:white;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:bold">Review &amp; sign Job Card</a></p><p style="color:#5b6b85">The LocalFix SA team</p></div>`,
+  });
+}
+
+export async function sendJobCardCustomerSignedEmail(input: {
+  to: string;
+  providerName: string;
+  jobReference: string;
+  jobId: number;
+}) {
+  return sendMail({
+    to: input.to,
+    subject: `Customer signed job card — ${input.jobReference}`,
+    text: `Hi ${input.providerName},\n\nYour LocalFix SA job card has been signed by the customer. The job is now officially completed and the locked Job Card is available.\n\nView/download: ${baseUrl()}/job-cards/${input.jobId}\n\nThe LocalFix SA team`,
+    html: `<div style="font-family:Arial,sans-serif;color:#0c2f5f;max-width:560px"><h2 style="color:#2e9e6b">Customer signature received ✓</h2><p>Hi ${input.providerName},</p><p>The customer signed Job Card <strong>${input.jobReference}</strong>. The job is officially completed and locked.</p><p><a href="${baseUrl()}/job-cards/${input.jobId}" style="color:#0f9c96;font-weight:bold">View signed Job Card →</a></p></div>`,
+  });
+}
+
+export async function sendJobCardCompletedEmail(input: {
+  to: string;
+  recipientName: string;
+  jobReference: string;
+  documentReference: string;
+  jobId: number;
+}) {
+  const name = input.recipientName.split(/\s+/)[0] || "there";
+  return sendMail({
+    to: input.to,
+    subject: `Completed — signed LocalFix Job Card ${input.jobReference}`,
+    text: `Hi ${name},\n\nBoth electronic signatures are complete. Your LocalFix SA job is now completed and the signed Job Card is locked.\n\nDocument: ${input.documentReference}\nView: ${baseUrl()}/job-cards/${input.jobId}\nDownload PDF: ${baseUrl()}/api/job-cards/${input.jobId}/pdf\n\nThank you for using LocalFix SA.\nThe LocalFix SA team`,
+    html: `<div style="font-family:Arial,sans-serif;color:#0c2f5f;max-width:560px"><h2 style="color:#2e9e6b">Job completed ✓</h2><p>Hi ${name},</p><p>Both electronic signatures are complete. The signed Job Card is now locked and available for your records.</p><p><strong>Document:</strong> ${input.documentReference}</p><p><a href="${baseUrl()}/job-cards/${input.jobId}" style="color:#0f9c96;font-weight:bold">View Job Card</a> &nbsp;·&nbsp; <a href="${baseUrl()}/api/job-cards/${input.jobId}/pdf" style="color:#0f9c96;font-weight:bold">Download PDF</a></p><p>Thank you for using LocalFix SA.</p></div>`,
+  });
+}
+
 export type ProviderDecision = "approve" | "pending_docs" | "decline";
 
 /** Sent to the applicant whenever Founder/Admin records a decision. */
