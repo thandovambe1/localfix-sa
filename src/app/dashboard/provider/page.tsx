@@ -173,25 +173,62 @@ export default async function ProviderDashboard() {
               {[...pipeline.quoted, ...pipeline.accepted].length === 0 ? (
                 <div className="card p-6 text-sm text-slate-600">No quotes submitted yet.</div>
               ) : null}
-              {[...pipeline.quoted, ...pipeline.accepted].map(({ job, quote }) => (
-                <article key={job.id} className="card flex flex-wrap items-center gap-4 p-5">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="truncate text-sm font-bold text-navy-800">{job.title}</h3>
-                      <StatusPill status={quote?.status ?? job.status} />
+              {[...pipeline.quoted, ...pipeline.accepted].map(({ job, quote }) => {
+                const accepted = quote?.status === "accepted";
+                const action =
+                  job.status === "awaiting_provider_signature"
+                    ? { label: "Sign Job Card", href: `/job-cards/${job.id}`, accent: true }
+                    : job.status === "awaiting_customer_signature"
+                      ? { label: "Awaiting Customer Signature", href: `/job-cards/${job.id}`, accent: false }
+                      : accepted && ["accepted", "in_progress"].includes(job.status)
+                        ? { label: "Complete Job", href: `/job-cards/${job.id}`, accent: true }
+                        : { label: "Open", href: `/jobs/${job.id}`, accent: false };
+                return (
+                  <article key={job.id} className="card flex flex-wrap items-center gap-4 p-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-sm font-bold text-navy-800">{job.title}</h3>
+                        <StatusPill status={accepted ? job.status : quote?.status ?? job.status} />
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        {job.city} · quoted {timeAgo(quote?.createdAt)} · {quote?.availability}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500">
-                      {job.city} · quoted {timeAgo(quote?.createdAt)} · {quote?.availability}
-                    </p>
-                  </div>
-                  <p className="text-lg font-extrabold text-navy-800">{zar(quote?.amount ?? 0)}</p>
-                  <Link href={`/jobs/${job.id}`} className="btn btn-ghost !px-4 !py-2 text-sm">
-                    Open
-                  </Link>
-                </article>
-              ))}
+                    <p className="text-lg font-extrabold text-navy-800">{zar(quote?.amount ?? 0)}</p>
+                    <Link
+                      href={action.href}
+                      className={`btn !px-4 !py-2 text-sm ${action.accent ? "btn-accent" : "btn-ghost"}`}
+                    >
+                      {action.label}
+                    </Link>
+                  </article>
+                );
+              })}
             </div>
           </section>
+
+          {pipeline.completed.length > 0 ? (
+            <section>
+              <h2 className="text-lg font-bold text-navy-800">Completed jobs</h2>
+              <div className="mt-4 space-y-3">
+                {pipeline.completed.map(({ job, quote }) => (
+                  <article key={job.id} className="card flex flex-wrap items-center gap-4 p-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate text-sm font-bold text-navy-800">{job.title}</h3>
+                        <StatusPill status="completed" />
+                      </div>
+                      <p className="text-xs text-slate-500">{job.reference} · {job.city}</p>
+                    </div>
+                    <p className="text-lg font-extrabold text-navy-800">{zar(quote?.amount ?? 0)}</p>
+                    <Link href={`/job-cards/${job.id}`} className="btn btn-ghost !px-4 !py-2 text-sm">
+                      View Signed Job Card
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <section className="card p-6">
             <h2 className="text-lg font-bold text-navy-800">Business analytics</h2>
