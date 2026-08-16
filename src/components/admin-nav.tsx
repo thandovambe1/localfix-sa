@@ -76,6 +76,18 @@ export default function AdminNav({
             </Link>
           );
         })}
+        {role === "owner" ? (
+          <Link
+            href="/admin/settings"
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+              pathname.startsWith("/admin/settings")
+                ? "bg-navy-600 text-white shadow-sm"
+                : "bg-mist text-slate-600 hover:bg-navy-50 hover:text-navy-700"
+            }`}
+          >
+            <span aria-hidden>⚙️</span> Settings
+          </Link>
+        ) : null}
       </nav>
     </div>
   );
