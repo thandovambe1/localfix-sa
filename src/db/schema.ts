@@ -48,6 +48,16 @@ export const providers = pgTable("providers", {
   logoUrl: text("logo_url"),
   status: text("status").notNull().default("pending"),
   plan: text("plan").notNull().default("free"),
+  /**
+   * Monthly subscription price in ZAR cents locked in at onboarding.
+   * Nullable so historical providers created before subscription pricing
+   * remain valid and untouched.
+   */
+  subscriptionPriceCents: integer("subscription_price_cents"),
+  /** Promotion identifier when the provider onboarded on a special (e.g. PRO_ONBOARDING_2026). */
+  promoCode: text("promo_code"),
+  /** Absolute instant the promotional price stops applying. */
+  promoEndsAt: timestamp("promo_ends_at", { withTimezone: true }),
   /** Latest decision note from Founder/Admin, shared with the applicant by email. */
   applicationNote: text("application_note").notNull().default(""),
   applicationDecidedBy: text("application_decided_by"),
