@@ -10,6 +10,7 @@ import { getProviderSession } from "@/lib/auth";
 import { categoryIcon, categoryName, urgencyLabel } from "@/lib/services";
 import { num, timeAgo, zar } from "@/lib/format";
 import { COMMISSION_PERCENT, formatZAR, formatZARCompact } from "@/lib/commission";
+import { describeProviderSubscription } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Provider dashboard", robots: { index: false } };
@@ -65,6 +66,14 @@ export default async function ProviderDashboard() {
     .filter((p) => p.payoutStatus === "payout_pending")
     .reduce((s, p) => s + p.providerPayoutCents, 0);
 
+  // Authoritative subscription/promotion state for this provider.
+  const subscription = describeProviderSubscription({
+    plan: provider.plan,
+    promoCode: provider.promoCode,
+    promoEndsAt: provider.promoEndsAt,
+    subscriptionPriceCents: provider.subscriptionPriceCents,
+  });
+
   return (
     <div className="container-page py-8 md:py-12">
       <header className="flex flex-wrap items-center gap-4">
@@ -78,7 +87,8 @@ export default async function ProviderDashboard() {
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-extrabold tracking-tight text-navy-800">{provider.businessName}</h1>
           <p className="text-sm text-slate-500">
-            {provider.city}, {provider.province} · {provider.serviceRadiusKm} km radius · {provider.plan} plan
+            {provider.city}, {provider.province} · {provider.serviceRadiusKm} km radius · {subscription.planName} plan
+            {subscription.promoActive ? " · Onboarding Special" : ""}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -357,6 +367,30 @@ export default async function ProviderDashboard() {
               ))}
               {reviews.length === 0 ? <li className="text-xs text-slate-500">No reviews yet.</li> : null}
             </ul>
+          </div>
+
+          {/* YOUR PLAN — reflects the authoritative server-side subscription state */}
+          <div className={`card p-5 ${subscription.promoActive ? "border-amber-200 bg-amber-50" : ""}`}>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Your plan</p>
+            <p className="mt-1 text-2xl font-extrabold text-navy-800">{subscription.planName}</p>
+            {subscription.promoActive ? (
+              <>
+                <span className="mt-2 inline-flex rounded-full bg-amber-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Onboarding Special
+                </span>
+                <p className="mt-2 text-lg font-black text-amber-900">
+                  FREE until {subscription.promoEndLabel}
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-amber-800">
+                  Normal price: {subscription.normalPrice}/month from {subscription.normalPricingStartLabel}
+                </p>
+              </>
+            ) : (
+              <p className="mt-1 text-sm font-semibold text-slate-600">
+                {subscription.currentPrice}
+                {subscription.currentPriceCents > 0 ? "/month" : " — free forever"}
+              </p>
+            )}
           </div>
 
           <div className="card border-teal-200 bg-gradient-to-br from-navy-50 via-white to-teal-50 p-5">
