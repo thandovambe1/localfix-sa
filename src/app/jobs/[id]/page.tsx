@@ -52,6 +52,9 @@ export default async function JobPage({
   const session = await getCustomerSession();
   const customer = session ? await getCustomer(session.id) : null;
   const admin = await getAdminSession();
+  const customerOwnsJob = Boolean(
+    customer && (job.customerId === customer.id || job.customerEmail.toLowerCase() === customer.email.toLowerCase()),
+  );
 
   // Identity is revealed only for the accepted quote, after payment clears.
   const settled = isPaymentSettled(payment);
@@ -261,10 +264,18 @@ export default async function JobPage({
                         Platform fee: {formatZAR(Math.round(q.amount * 100 * 0.13))} (13%)
                       </p>
                       <p className="text-[11px] text-slate-400">Quoted {timeAgo(q.createdAt)}</p>
-                      {q.status === "submitted" ? (
+                      {q.status === "submitted" && customerOwnsJob ? (
                         <QuoteActions quoteId={q.id} />
-                      ) : q.status === "accepted" && !payment ? (
+                      ) : q.status === "submitted" ? (
+                        <span className="rounded-full bg-mist px-3 py-1 text-[11px] font-bold text-slate-500">
+                          Awaiting customer decision
+                        </span>
+                      ) : q.status === "accepted" && !payment && customerOwnsJob ? (
                         <PayButton quoteId={q.id} quoteAmount={q.amount} jobId={job.id} />
+                      ) : q.status === "accepted" && !payment ? (
+                        <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-700">
+                          Awaiting customer payment
+                        </span>
                       ) : q.status === "accepted" && payment ? (
                         <PaymentStatusBadge status={payment.status} />
                       ) : (
