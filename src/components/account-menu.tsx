@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import SignOutIcon from "@/components/sign-out-icon";
 
 type Me = { id: number; name: string; email: string; walletCents: number; inboxUnread?: number } | null;
 
@@ -109,8 +110,9 @@ export default function AccountMenu({ mobile = false }: { mobile?: boolean }) {
         <Link href="/post-job" className="btn btn-accent w-full">
           Request a Job
         </Link>
-        <button onClick={signOut} className="btn btn-ghost w-full !text-bad">
-          Sign out
+        <button onClick={signOut} className="btn btn-signout w-full">
+          <SignOutIcon />
+          Sign Out
         </button>
       </div>
     );
@@ -188,12 +190,12 @@ export default function AccountMenu({ mobile = false }: { mobile?: boolean }) {
                 {item.label}
               </Link>
             ))}
-            <button
-              onClick={signOut}
-              className="flex w-full items-center gap-2.5 border-t border-slate-100 px-4 py-2.5 text-left text-sm font-semibold text-bad transition hover:bg-red-50"
-            >
-              <span aria-hidden>↩</span> Sign out
-            </button>
+            <div className="border-t border-slate-100 p-2">
+              <button onClick={signOut} className="btn btn-signout w-full !py-2.5 text-sm">
+                <SignOutIcon />
+                Sign Out
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
