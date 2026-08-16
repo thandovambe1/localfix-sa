@@ -1,12 +1,13 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { broadcasts, jobs } from "@/db/schema";
+import { broadcasts, jobMedia, jobs } from "@/db/schema";
 import { analyseJob, matchScore } from "@/lib/ai";
 import { findCity } from "@/lib/geo";
 import { jobReference, num, zar } from "@/lib/format";
 import { getCustomer, getJobs, matchProviders, ready } from "@/lib/queries";
 import { getCustomerSession } from "@/lib/auth";
 import { sendJobConfirmationEmail } from "@/lib/email";
+import { validateIncomingJobMedia, mediaKind } from "@/lib/media";
 import { categoryName, urgencyLabel } from "@/lib/services";
 
 export const dynamic = "force-dynamic";
@@ -49,7 +50,9 @@ export async function POST(request: Request) {
 
   const budgetMin = body.budgetMin ? Number(body.budgetMin) : null;
   const budgetMax = body.budgetMax ? Number(body.budgetMax) : null;
-  const photos = Array.isArray(body.photos) ? (body.photos as string[]).map(String) : [];
+  const mediaResult = validateIncomingJobMedia(body.mediaUploads);
+  if (!mediaResult.ok) return Response.json({ error: mediaResult.error }, { status: 400 });
+  const photos = Array.isArray(body.photos) ? (body.photos as string[]).map(String) : mediaResult.media.map((m) => m.originalName);
 
   const ai = analyseJob({
     title,
@@ -64,36 +67,55 @@ export async function POST(request: Request) {
   const urgency = String(body.urgency ?? "this-week");
   const deadlineHours = urgency === "emergency" ? 2 : urgency === "today" ? 6 : urgency === "this-week" ? 24 : 48;
 
-  const [job] = await db
-    .insert(jobs)
-    .values({
-      customerId: account.id,
-      reference: jobReference(),
-      categorySlug: ai.categorySlug,
-      title,
-      description,
-      address: String(body.address ?? ""),
-      suburb: String(body.suburb ?? ""),
-      city: city?.city ?? cityName,
-      province: String(body.province ?? city?.province ?? "Gauteng"),
-      lat: lat.toFixed(6),
-      lng: lng.toFixed(6),
-      urgency,
-      budgetMin,
-      budgetMax,
-      contactMethod: String(body.contactMethod ?? "whatsapp"),
-      preferredTimes: String(body.preferredTimes ?? ""),
-      photos,
-      customerName: String(body.customerName ?? account.name),
-      customerEmail,
-      customerPhone: String(body.customerPhone ?? account.phone),
-      aiSummary: ai.summary,
-      aiComplexity: ai.complexity,
-      aiBudgetLow: ai.budgetLow,
-      aiBudgetHigh: ai.budgetHigh,
-      quoteDeadline: new Date(Date.now() + deadlineHours * 3600_000),
-    })
-    .returning();
+  const [job] = await db.transaction(async (tx) => {
+    const [createdJob] = await tx
+      .insert(jobs)
+      .values({
+        customerId: account.id,
+        reference: jobReference(),
+        categorySlug: ai.categorySlug,
+        title,
+        description,
+        address: String(body.address ?? ""),
+        suburb: String(body.suburb ?? ""),
+        city: city?.city ?? cityName,
+        province: String(body.province ?? city?.province ?? "Gauteng"),
+        lat: lat.toFixed(6),
+        lng: lng.toFixed(6),
+        urgency,
+        budgetMin,
+        budgetMax,
+        contactMethod: String(body.contactMethod ?? "whatsapp"),
+        preferredTimes: String(body.preferredTimes ?? ""),
+        photos,
+        customerName: String(body.customerName ?? account.name),
+        customerEmail,
+        customerPhone: String(body.customerPhone ?? account.phone),
+        aiSummary: ai.summary,
+        aiComplexity: ai.complexity,
+        aiBudgetLow: ai.budgetLow,
+        aiBudgetHigh: ai.budgetHigh,
+        quoteDeadline: new Date(Date.now() + deadlineHours * 3600_000),
+      })
+      .returning();
+
+    if (mediaResult.media.length) {
+      await tx.insert(jobMedia).values(
+        mediaResult.media.map((m, index) => ({
+          jobId: createdJob.id,
+          uploaderCustomerId: account.id,
+          storageKey: `job/${createdJob.id}/${Date.now()}-${index}-${m.originalName.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+          originalName: m.originalName,
+          mimeType: m.mimeType,
+          mediaType: mediaKind(m.mimeType),
+          sizeBytes: m.sizeBytes,
+          fileData: m.fileData,
+        })),
+      );
+    }
+
+    return [createdJob];
+  });
 
   // BROADCAST: notify every matching, active provider inside the service radius.
   const matches = await matchProviders({ categorySlug: ai.categorySlug, lat, lng, radiusKm: 20 });
