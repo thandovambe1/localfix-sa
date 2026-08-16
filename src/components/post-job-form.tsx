@@ -15,6 +15,26 @@ type Ai = {
   confidence: number;
 };
 
+type DraftMedia = {
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  fileData: string;
+};
+
+const ACCEPTED_JOB_MEDIA_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+const MAX_MEDIA_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_MEDIA_TOTAL_BYTES = 2.5 * 1024 * 1024;
+const MAX_MEDIA_FILES = 5;
+
 const STEPS = ["Service", "Job details", "Location & contact"];
 
 export default function PostJobForm() {
@@ -24,7 +44,8 @@ export default function PostJobForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [ai, setAi] = useState<Ai | null>(null);
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [mediaUploads, setMediaUploads] = useState<DraftMedia[]>([]);
+  const [mediaError, setMediaError] = useState("");
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [me, setMe] = useState<{ id: number; name: string; email: string } | null>(null);
 
@@ -55,11 +76,9 @@ export default function PostJobForm() {
           if (raw) {
             const draft = JSON.parse(raw) as {
               form?: Partial<Record<string, string>>;
-              photos?: string[];
               step?: number;
             };
             if (draft.form) setForm((f) => ({ ...f, ...draft.form }));
-            if (Array.isArray(draft.photos)) setPhotos(draft.photos);
             if (typeof draft.step === "number") setStep(draft.step);
             sessionStorage.removeItem("lfx_postjob_draft");
           }
@@ -116,7 +135,7 @@ export default function PostJobForm() {
           description: form.description,
           categorySlug: form.categorySlug,
           budgetMax: form.budgetMax ? Number(form.budgetMax) : null,
-          photos: photos.length,
+          photos: mediaUploads.length,
           hasAddress: Boolean(form.address),
           hasTimes: Boolean(form.preferredTimes),
         }),
@@ -147,11 +166,48 @@ export default function PostJobForm() {
         ? form.title.trim().length > 3 && form.description.trim().length > 10
         : Boolean(form.customerName && form.customerEmail.includes("@"));
 
+  function addMediaFiles(files: FileList | null) {
+    if (!files) return;
+    setMediaError("");
+    const currentBytes = mediaUploads.reduce((sum, item) => sum + item.sizeBytes, 0);
+    let nextBytes = currentBytes;
+    const selected = Array.from(files).slice(0, Math.max(0, MAX_MEDIA_FILES - mediaUploads.length));
+
+    for (const file of selected) {
+      if (!ACCEPTED_JOB_MEDIA_TYPES.has(file.type)) {
+        setMediaError(`${file.name}: unsupported file type.`);
+        continue;
+      }
+      if (file.size > MAX_MEDIA_FILE_BYTES) {
+        setMediaError(`${file.name}: file must be 2 MB or smaller.`);
+        continue;
+      }
+      if (nextBytes + file.size > MAX_MEDIA_TOTAL_BYTES) {
+        setMediaError("Total upload size must be 2.5 MB or smaller.");
+        continue;
+      }
+      nextBytes += file.size;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setMediaUploads((rows) => [
+          ...rows,
+          {
+            originalName: file.name,
+            mimeType: file.type,
+            sizeBytes: file.size,
+            fileData: String(reader.result ?? ""),
+          },
+        ].slice(0, MAX_MEDIA_FILES));
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   async function submit() {
     // Booking can be completed only by a signed-in customer.
     if (!me) {
       try {
-        sessionStorage.setItem("lfx_postjob_draft", JSON.stringify({ form, photos, step }));
+        sessionStorage.setItem("lfx_postjob_draft", JSON.stringify({ form, step }));
       } catch {
         /* storage unavailable — redirect anyway */
       }
@@ -168,7 +224,8 @@ export default function PostJobForm() {
           ...form,
           budgetMin: form.budgetMin ? Number(form.budgetMin) : null,
           budgetMax: form.budgetMax ? Number(form.budgetMax) : null,
-          photos,
+          photos: mediaUploads.map((m) => m.originalName),
+          mediaUploads,
           lat: gps?.lat,
           lng: gps?.lng,
         }),
@@ -176,7 +233,7 @@ export default function PostJobForm() {
       if (res.status === 401) {
         // Session expired between filling and submitting — keep the draft.
         try {
-          sessionStorage.setItem("lfx_postjob_draft", JSON.stringify({ form, photos, step }));
+          sessionStorage.setItem("lfx_postjob_draft", JSON.stringify({ form, step }));
         } catch {
           /* ignore */
         }
@@ -308,7 +365,8 @@ export default function PostJobForm() {
               <span className="label">Photos &amp; videos</span>
               <label className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 transition hover:border-teal-300 hover:bg-teal-50/40">
                 <span className="text-sm text-slate-600">
-                  <span className="font-semibold text-navy-700">Tap to upload</span> — photos, videos or documents
+                  <span className="font-semibold text-navy-700">Tap to upload</span> — images or short videos (private)
+                  <span className="mt-1 block text-xs text-slate-400">JPG, PNG, WebP, GIF, MP4, WebM, MOV · max 2 MB each</span>
                 </span>
                 <span className="text-xl" aria-hidden>
                   📸
@@ -316,19 +374,25 @@ export default function PostJobForm() {
                 <input
                   type="file"
                   multiple
-                  accept="image/*,video/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
                   className="hidden"
-                  onChange={(e) => {
-                    const names = Array.from(e.target.files ?? []).map((f) => f.name);
-                    setPhotos((p) => [...p, ...names].slice(0, 8));
-                  }}
+                  onChange={(e) => addMediaFiles(e.target.files)}
                 />
               </label>
-              {photos.length ? (
+              {mediaError ? <p className="mt-2 text-xs font-semibold text-bad">{mediaError}</p> : null}
+              {mediaUploads.length ? (
                 <ul className="mt-2 flex flex-wrap gap-2">
-                  {photos.map((p, i) => (
-                    <li key={`${p}-${i}`} className="chip">
-                      🖼️ {p.length > 22 ? `${p.slice(0, 20)}…` : p}
+                  {mediaUploads.map((m, i) => (
+                    <li key={`${m.originalName}-${i}`} className="chip">
+                      {m.mimeType.startsWith("video/") ? "🎬" : "🖼️"} {m.originalName.length > 22 ? `${m.originalName.slice(0, 20)}…` : m.originalName}
+                      <button
+                        type="button"
+                        onClick={() => setMediaUploads((rows) => rows.filter((_, idx) => idx !== i))}
+                        className="ml-1 font-bold text-bad"
+                        aria-label={`Remove ${m.originalName}`}
+                      >
+                        ×
+                      </button>
                     </li>
                   ))}
                 </ul>
