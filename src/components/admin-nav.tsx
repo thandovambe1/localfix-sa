@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Monogram } from "@/components/brand-logo";
+import SignOutIcon from "@/components/sign-out-icon";
 
 const TABS = [
   { href: "/admin", label: "Overview", icon: "📊" },
@@ -52,8 +53,9 @@ export default function AdminNav({
             <p className="text-[11px] text-slate-500">{email}</p>
           </div>
         </div>
-        <button onClick={logout} disabled={busy} className="btn btn-ghost !px-4 !py-2 text-sm">
-          {busy ? "Signing out…" : "Sign out"}
+        <button onClick={logout} disabled={busy} className="btn btn-signout !px-4 !py-2 text-sm">
+          <SignOutIcon />
+          {busy ? "Signing out…" : "Sign Out"}
         </button>
       </div>
 
