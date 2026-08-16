@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import SignOutIcon from "@/components/sign-out-icon";
 
 export default function ProviderSignOut() {
   const router = useRouter();
@@ -21,14 +22,15 @@ export default function ProviderSignOut() {
 
   if (confirming) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500">Sign out?</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-bold text-navy-800">Sign out?</span>
         <button
           type="button"
           onClick={signOut}
           disabled={busy}
-          className="btn !bg-red-50 !px-4 !py-2 text-sm font-bold !text-bad ring-1 ring-red-200 hover:!bg-red-100"
+          className="btn btn-signout !px-4 !py-2 text-sm"
         >
+          <SignOutIcon />
           {busy ? "Signing out…" : "Yes, sign out"}
         </button>
         <button
@@ -46,9 +48,10 @@ export default function ProviderSignOut() {
     <button
       type="button"
       onClick={() => setConfirming(true)}
-      className="btn btn-ghost !px-4 !py-2 text-sm !text-bad hover:!bg-red-50"
+      className="btn btn-signout !px-4 !py-2 text-sm"
     >
-      Sign out
+      <SignOutIcon />
+      Sign Out
     </button>
   );
 }
