@@ -104,14 +104,30 @@ export default async function ContentPage({ params }: { params: Promise<{ page: 
                         tier.featured ? "ring-2 ring-teal-400" : ""
                       }`}
                     >
-                      {tier.featured ? (
+                      {tier.promoBadge ? (
+                        <span className="mb-3 inline-flex w-fit rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                          {tier.promoBadge}
+                        </span>
+                      ) : tier.featured ? (
                         <span className="mb-3 inline-flex w-fit rounded-full bg-teal-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
                           Most popular
                         </span>
                       ) : null}
                       <h3 className="text-lg font-bold text-navy-800">{tier.name}</h3>
-                      <p className="mt-2 text-4xl font-extrabold text-navy-800">{tier.price}</p>
+                      {tier.strikethroughPrice ? (
+                        <p className="mt-2 text-lg font-semibold text-slate-400 line-through">
+                          {tier.strikethroughPrice}/month
+                        </p>
+                      ) : null}
+                      <p className={`text-4xl font-extrabold text-navy-800 ${tier.strikethroughPrice ? "" : "mt-2"}`}>
+                        {tier.price}
+                      </p>
                       <p className="text-xs text-slate-500">{tier.note}</p>
+                      {tier.promoSubtext ? (
+                        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800">
+                          {tier.promoSubtext}
+                        </p>
+                      ) : null}
                       <ul className="mt-5 flex-1 space-y-2.5 text-sm text-slate-700">
                         {tier.features.map((f) => (
                           <li key={f} className="flex gap-2">
