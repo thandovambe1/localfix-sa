@@ -1,8 +1,29 @@
+import {
+  formatPlanPrice,
+  getPlanDisplays,
+  NORMAL_PRICING_START_LABEL,
+  PLAN_PRICE_CENTS,
+  PROMO_END_LABEL,
+} from "@/lib/pricing";
+
 export type ContentBlock =
   | { type: "prose"; heading?: string; body: string[] }
   | { type: "cards"; heading: string; items: { icon?: string; title: string; body: string }[] }
   | { type: "faq"; heading: string; items: { q: string; a: string }[] }
-  | { type: "pricing"; heading: string; tiers: { name: string; price: string; note: string; features: string[]; featured?: boolean }[] }
+  | {
+      type: "pricing";
+      heading: string;
+      tiers: {
+        name: string;
+        price: string;
+        note: string;
+        features: string[];
+        featured?: boolean;
+        strikethroughPrice?: string | null;
+        promoBadge?: string | null;
+        promoSubtext?: string | null;
+      }[];
+    }
   | { type: "contact"; heading: string }
   | { type: "posts"; heading: string; items: { title: string; excerpt: string; tag: string; read: string }[] };
 
@@ -63,47 +84,19 @@ export const CONTENT_PAGES: ContentPage[] = [
       {
         type: "pricing",
         heading: "Provider plans",
-        tiers: [
-          {
-            name: "Starter",
-            price: "R0",
-            note: "per month, forever",
-            features: [
-              "Verified business profile",
-              "Up to 10 job leads a month",
-              "Quote and chat in-platform",
-              "Reviews and rating profile",
-              "Standard support",
-            ],
-          },
-          {
-            name: "Pro",
-            price: "R399",
-            note: "per month, cancel anytime",
-            featured: true,
-            features: [
-              "Unlimited job leads",
-              "Priority placement in matching",
-              "Business analytics dashboard",
-              "Invoices, quotes and calendar",
-              "Portfolio and before/after gallery",
-              "Priority support",
-            ],
-          },
-          {
-            name: "Premium",
-            price: "R899",
-            note: "per month, cancel anytime",
-            features: [
-              "Everything in Pro",
-              "Premium Provider badge",
-              "Featured placement on category pages",
-              "Multi-branch and team accounts",
-              "Dedicated account manager",
-              "API access for job sync",
-            ],
-          },
-        ],
+        // Tiers are generated from the single authoritative pricing source
+        // in src/lib/pricing.ts so every surface stays consistent and the
+        // Pro onboarding special expires automatically.
+        tiers: getPlanDisplays({ forNewOnboarding: true, pageFeatures: true }).map((plan) => ({
+          name: plan.name,
+          price: plan.displayPrice,
+          note: plan.note,
+          features: plan.features,
+          featured: plan.key === "pro",
+          strikethroughPrice: plan.strikethroughPrice,
+          promoBadge: plan.promoBadge,
+          promoSubtext: plan.promoSubtext,
+        })),
       },
       {
         type: "cards",
@@ -201,7 +194,10 @@ export const CONTENT_PAGES: ContentPage[] = [
         type: "faq",
         heading: "For service providers",
         items: [
-          { q: "How much does it cost to join?", a: "Registration and verification are free, and the Starter plan gives you up to 10 leads a month at no cost. Pro is R399 per month for unlimited leads." },
+          {
+            q: "How much does it cost to join?",
+            a: `Registration and verification are free, and the Starter plan gives you up to 10 leads a month at no cost. Pro is normally ${formatPlanPrice(PLAN_PRICE_CENTS.pro)} per month for unlimited leads, and Premium is ${formatPlanPrice(PLAN_PRICE_CENTS.premium)} per month. New providers who onboard on Pro during our Service Provider Onboarding Special pay R0 until ${PROMO_END_LABEL}, after which normal Pro pricing of ${formatPlanPrice(PLAN_PRICE_CENTS.pro)} per month applies from ${NORMAL_PRICING_START_LABEL}.`,
+          },
           { q: "How do I receive job requests?", a: "Jobs matching your trades and service radius are pushed to your dashboard instantly, with email, SMS and WhatsApp notifications." },
           { q: "Do I pay per lead?", a: "No. LocalFix does not sell leads or run bidding auctions. You see the job, you quote, the customer chooses." },
           { q: "How long does verification take?", a: "Most providers are activated within 24 to 48 hours once all documents are uploaded." },
