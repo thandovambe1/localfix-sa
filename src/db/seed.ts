@@ -60,6 +60,9 @@ alter table providers add column if not exists password_hash text;
 alter table providers add column if not exists application_note text not null default '';
 alter table providers add column if not exists application_decided_by text;
 alter table providers add column if not exists application_decided_at timestamptz;
+alter table providers add column if not exists subscription_price_cents integer;
+alter table providers add column if not exists promo_code text;
+alter table providers add column if not exists promo_ends_at timestamptz;
 create unique index if not exists providers_email_idx on providers (lower(email));
 
 create table if not exists provider_documents (
