@@ -120,6 +120,32 @@ export const jobs = pgTable("jobs", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Private customer-uploaded job media.
+ *
+ * Stored in PostgreSQL as data URLs for the current production stack
+ * (Next.js + Vercel + Postgres/Drizzle) because no external object-storage
+ * provider is configured in this project. Access is never public; media is
+ * served only through /api/media/[id] after server-side authorization.
+ */
+export const jobMedia = pgTable(
+  "job_media",
+  {
+    id: serial("id").primaryKey(),
+    jobId: integer("job_id").notNull(),
+    uploaderCustomerId: integer("uploader_customer_id"),
+    storageKey: text("storage_key").notNull(),
+    originalName: text("original_name").notNull(),
+    mimeType: text("mime_type").notNull(),
+    mediaType: text("media_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    fileData: text("file_data").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("job_media_job_idx").on(table.jobId), index("job_media_uploader_idx").on(table.uploaderCustomerId)],
+);
+
 export const quotes = pgTable("quotes", {
   id: serial("id").primaryKey(),
   jobId: integer("job_id").notNull(),
@@ -472,6 +498,7 @@ export const passwordResetCodes = pgTable("password_reset_codes", {
 export type Provider = typeof providers.$inferSelect;
 export type ProviderDocument = typeof providerDocuments.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
+export type JobMedia = typeof jobMedia.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 export type JobCard = typeof jobCards.$inferSelect;
 export type JobSignature = typeof jobSignatures.$inferSelect;
