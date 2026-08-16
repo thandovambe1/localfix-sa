@@ -342,6 +342,98 @@ export async function getWithdrawalStats() {
   return row;
 }
 
+/**
+ * Professionals the customer has genuinely completed jobs with.
+ *
+ * Derived from authoritative completed-job records:
+ *   job.status = 'completed'
+ *   + an accepted quote linking to the provider
+ *   + the job belongs to this customer
+ *
+ * Returns one entry per provider (deduplicated), with aggregate stats
+ * and the customer's review if one exists.
+ */
+export async function getCompletedProfessionals(customerId: number, customerEmail: string) {
+  await ready();
+
+  const completedJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
+  const mine = completedJobs.filter(
+    (j) =>
+      j.status === "completed" &&
+      (j.customerId === customerId || j.customerEmail.toLowerCase() === customerEmail.toLowerCase()),
+  );
+  if (!mine.length) return [];
+
+  const acceptedQuotes = await db.select().from(quotes);
+  const quotesByJob = new Map<number, (typeof quotes.$inferSelect)[]>();
+  for (const q of acceptedQuotes) {
+    if (q.status !== "accepted") continue;
+    const arr = quotesByJob.get(q.jobId) ?? [];
+    arr.push(q);
+    quotesByJob.set(q.jobId, arr);
+  }
+
+  const providerIds = new Set<number>();
+  const jobsByProvider = new Map<number, typeof mine>();
+
+  for (const job of mine) {
+    const accepted = quotesByJob.get(job.id);
+    if (!accepted?.length) continue;
+    const providerId = accepted[0].providerId;
+    providerIds.add(providerId);
+    const arr = jobsByProvider.get(providerId) ?? [];
+    arr.push(job);
+    jobsByProvider.set(providerId, arr);
+  }
+
+  if (!providerIds.size) return [];
+
+  const providerRows = await db
+    .select()
+    .from(providers)
+    .where(inArray(providers.id, [...providerIds]));
+  const providerMap = new Map(providerRows.map((p) => [p.id, p]));
+
+  const allReviews = await db.select().from(reviews);
+  const reviewsByProvider = new Map<number, (typeof reviews.$inferSelect)[]>();
+  for (const r of allReviews) {
+    if (!providerIds.has(r.providerId)) continue;
+    const jobBelongsToCustomer = mine.some((j) => j.id === r.jobId);
+    if (r.jobId && !jobBelongsToCustomer) continue;
+    const arr = reviewsByProvider.get(r.providerId) ?? [];
+    arr.push(r);
+    reviewsByProvider.set(r.providerId, arr);
+  }
+
+  return [...providerIds]
+    .map((pid) => {
+      const provider = providerMap.get(pid);
+      if (!provider) return null;
+      const completedJobsForProvider = jobsByProvider.get(pid) ?? [];
+      const myReviews = reviewsByProvider.get(pid) ?? [];
+      const avgRating = myReviews.length
+        ? myReviews.reduce((s, r) => s + r.rating, 0) / myReviews.length
+        : null;
+      const latestReview = myReviews.sort(
+        (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0),
+      )[0] ?? null;
+      const lastCompletedJob = completedJobsForProvider[0] ?? null;
+
+      return {
+        provider,
+        completedJobCount: completedJobsForProvider.length,
+        lastCompletedAt: lastCompletedJob?.createdAt ?? null,
+        lastJobTitle: lastCompletedJob?.title ?? null,
+        lastJobCategory: lastCompletedJob?.categorySlug ?? null,
+        avgRating,
+        reviewCount: myReviews.length,
+        latestReview,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => (b.lastCompletedAt?.getTime() ?? 0) - (a.lastCompletedAt?.getTime() ?? 0));
+}
+
 export async function getInboxMessages(customerId: number, email: string, limit = 4) {
   await ready();
   return db
