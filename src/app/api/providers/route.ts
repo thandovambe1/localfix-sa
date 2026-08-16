@@ -4,6 +4,7 @@ import { providerDocuments, providers } from "@/db/schema";
 import { getAdminSession, hashPassword } from "@/lib/auth";
 import { sendApplicationReceivedEmail } from "@/lib/email";
 import { findCity } from "@/lib/geo";
+import { resolveProviderPlanPrice, type ProviderPlanKey } from "@/lib/pricing";
 import { getProviders, ready } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +45,16 @@ export async function POST(request: Request) {
   const provinces = Array.isArray(body.provinces)
     ? [...new Set((body.provinces as string[]).map(String).filter(Boolean))]
     : [String(body.province ?? "Gauteng")];
-  const plan = body.plan === "pro" || body.plan === "premium" ? String(body.plan) : "free";
+  const plan = (body.plan === "pro" || body.plan === "premium" ? String(body.plan) : "free") as ProviderPlanKey;
+
+  /**
+   * SERVER-SIDE authoritative pricing.
+   *
+   * Any `price`, `amount` or `promo` value sent by the browser is ignored.
+   * The payable amount is derived from the selected plan, the current
+   * South African date and the fact that this is a brand-new onboarding.
+   */
+  const pricing = resolveProviderPlanPrice(plan, { isNewOnboarding: true });
 
   const password = String(body.password ?? "");
   const ownerName = String(body.ownerName ?? "").trim();
@@ -165,6 +175,10 @@ export async function POST(request: Request) {
         rating: "0.00",
         status: "pending",
         plan,
+        // Server-resolved subscription pricing — never taken from the client.
+        subscriptionPriceCents: pricing.payablePriceCents,
+        promoCode: pricing.promoCode,
+        promoEndsAt: pricing.promoEndsAt,
       })
       .returning();
 
@@ -201,6 +215,16 @@ export async function POST(request: Request) {
         email: provider.email,
         status: provider.status,
         plan: provider.plan,
+      },
+      // Server-calculated billing outcome, echoed back for the confirmation UI.
+      billing: {
+        plan: pricing.plan,
+        normalPriceCents: pricing.normalPriceCents,
+        payablePriceCents: pricing.payablePriceCents,
+        discountCents: pricing.discountCents,
+        promoApplied: pricing.promoApplied,
+        promoCode: pricing.promoCode,
+        promoEndsAt: pricing.promoEndsAt,
       },
     },
     { status: 201 },
