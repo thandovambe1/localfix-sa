@@ -123,6 +123,46 @@ body {
     transform: translateY(-1px);
   }
 
+  /**
+   * Shared Sign Out button style.
+   *
+   * Used by every authenticated area (customer, provider, admin/founder,
+   * desktop and mobile) so logout is always high-contrast, obvious and
+   * consistent — without resorting to an aggressive brand-clashing red.
+   * Deep navy surface + white text gives a WCAG AA contrast ratio well
+   * above 4.5:1, with a clear red-tinted hover and a visible focus ring.
+   */
+  .btn-signout {
+    background: var(--color-navy-800);
+    color: #ffffff;
+    border: 1px solid var(--color-navy-900);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 6px 16px rgba(41, 66, 111, 0.22);
+    min-height: 44px; /* comfortable mobile touch target */
+  }
+
+  .btn-signout:hover {
+    background: #8f2f2f;
+    border-color: #7a2727;
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(143, 47, 47, 0.28);
+  }
+
+  .btn-signout:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px #ffffff,
+      0 0 0 6px var(--color-navy-700);
+  }
+
+  .btn-signout:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
+
   .chip {
     display: inline-flex;
     align-items: center;
