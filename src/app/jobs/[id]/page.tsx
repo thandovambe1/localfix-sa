@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Countdown, JobChat, QuoteActions, QuoteDocButton } from "@/components/job-client";
+import MediaGallery from "@/components/media-gallery";
 import { CommissionBreakdown, PayButton, PaymentStatusBadge } from "@/components/payment-section";
 import { QuoteComparePanel } from "@/components/quote-compare";
 import { QuoteDocument } from "@/components/quote-document";
@@ -20,6 +21,7 @@ import { categoryIcon, categoryName, urgencyLabel } from "@/lib/services";
 import { num, shortDate, timeAgo, zar } from "@/lib/format";
 import { formatZAR } from "@/lib/commission";
 import { getAdminSession } from "@/lib/auth";
+import { getJobMediaForJob } from "@/lib/media";
 import { aliasMapFor, isPaymentSettled, quoteRevealed } from "@/lib/reveal";
 
 export const dynamic = "force-dynamic";
@@ -39,11 +41,12 @@ export default async function JobPage({
   const job = await getJob(jobId);
   if (!job) notFound();
 
-  const [quotes, messages, broadcastRows, payment] = await Promise.all([
+  const [quotes, messages, broadcastRows, payment, media] = await Promise.all([
     getJobQuotes(jobId),
     getJobMessages(jobId),
     getJobBroadcasts(jobId),
     getPaymentByJobId(jobId),
+    getJobMediaForJob(jobId),
   ]);
 
   const best = quotes.length ? Math.min(...quotes.map((q) => q.amount)) : 0;
@@ -105,18 +108,9 @@ export default async function JobPage({
               <Info label="Contact via" value={job.contactMethod} />
             </div>
 
-            {job.photos.length ? (
-              <div className="mt-5">
-                <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500">Photos &amp; videos</h2>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {job.photos.map((p, i) => (
-                    <span key={`${p}-${i}`} className="grid h-20 w-24 place-items-center rounded-2xl bg-mist text-2xl" title={p}>
-                      {p.length <= 3 ? p : "🖼️"}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            <div className="mt-5">
+              <MediaGallery media={media} title="Photos & Videos From Customer" />
+            </div>
 
             <div className="mt-5 rounded-2xl bg-navy-50 p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-navy-700">🤖 AI job analysis</p>
