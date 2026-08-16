@@ -5,9 +5,8 @@ import ProviderDocumentReview from "@/components/provider-document-review";
 import { Stat, StatusPill, VerificationBadge } from "@/components/ui";
 import { getProviders } from "@/lib/queries";
 import { categoryName } from "@/lib/services";
-import { num, timeAgo } from "@/lib/format";
-
-const PLAN_LABEL: Record<string, string> = { free: "Starter · free", pro: "Pro", premium: "Premium" };
+import { num, timeAgo, shortDate } from "@/lib/format";
+import { describeProviderSubscription } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Provider verification", robots: { index: false } };
@@ -52,9 +51,30 @@ export default async function AdminProvidersPage() {
                     {p.businessName}
                   </Link>
                   <StatusPill status={p.status} />
-                  <span className="rounded-full bg-navy-50 px-2.5 py-1 text-[11px] font-bold text-navy-700">
-                    {PLAN_LABEL[p.plan] ?? p.plan}
-                  </span>
+                  {(() => {
+                    const sub = describeProviderSubscription({
+                      plan: p.plan,
+                      promoCode: p.promoCode,
+                      promoEndsAt: p.promoEndsAt,
+                      subscriptionPriceCents: p.subscriptionPriceCents,
+                    });
+                    return (
+                      <>
+                        <span className="rounded-full bg-navy-50 px-2.5 py-1 text-[11px] font-bold text-navy-700">
+                          {sub.planName} · {sub.currentPrice}
+                          {sub.currentPriceCents > 0 ? "/mo" : ""}
+                        </span>
+                        {sub.promoActive ? (
+                          <span
+                            className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-800"
+                            title={`Normal ${sub.normalPrice}/month resumes ${sub.normalPricingStartLabel}`}
+                          >
+                            Promo · free to {sub.promoEndsAt ? shortDate(sub.promoEndsAt) : sub.promoEndLabel}
+                          </span>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                   <span className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-700">
                     {p.provinces.length} province{p.provinces.length === 1 ? "" : "s"}
                   </span>
