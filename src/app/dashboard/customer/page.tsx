@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ProviderCard, Stat, StatusPill } from "@/components/ui";
+import { Stars, Stat, StatusPill } from "@/components/ui";
 import { WalletCard, WalletHistory, WithdrawalHistory } from "@/components/wallet-card";
 import {
+  getCompletedProfessionals,
   getCustomer,
   getInboxMessages,
   getJobsForCustomer,
-  getProviders,
   getWalletTransactions,
   getWithdrawalsForCustomer,
 } from "@/lib/queries";
@@ -36,7 +36,7 @@ export default async function CustomerDashboard({
           </span>
           <h1 className="mt-4 text-2xl font-extrabold text-navy-800">Sign in to your dashboard</h1>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
-            Track your jobs, compare quotes, manage saved professionals and load your rainy-day wallet.
+            Track your jobs, compare quotes, view professionals you&apos;ve worked with and load your rainy-day wallet.
           </p>
           <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/login?next=/dashboard/customer" className="btn btn-accent">
@@ -65,10 +65,10 @@ export default async function CustomerDashboard({
     );
   }
 
-  const [myJobs, transactions, saved, inbox, wdRows] = await Promise.all([
+  const [myJobs, transactions, workedWith, inbox, wdRows] = await Promise.all([
     getJobsForCustomer(customer.id, customer.email),
     getWalletTransactions(customer.id),
-    getProviders({ limit: 3 }),
+    getCompletedProfessionals(customer.id, customer.email),
     getInboxMessages(customer.id, customer.email),
     getWithdrawalsForCustomer(customer.id),
   ]);
@@ -231,12 +231,98 @@ export default async function CustomerDashboard({
           </section>
 
           <section>
-            <h2 className="text-lg font-bold text-navy-800">Saved professionals</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {saved.map((p) => (
-                <ProviderCard key={p.id} provider={p} />
-              ))}
-            </div>
+            <h2 className="text-lg font-bold text-navy-800">Professionals You&apos;ve Worked With</h2>
+            {workedWith.length === 0 ? (
+              <div className="card mt-4 p-6 text-center">
+                <span className="text-3xl" aria-hidden>
+                  🤝
+                </span>
+                <p className="mt-3 text-sm font-semibold text-navy-800">
+                  You haven&apos;t completed a job with any professionals yet.
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Once you complete a job through LocalFix SA, your professional will appear here automatically.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {workedWith.map((entry) => (
+                  <div key={entry.provider.id} className="card card-hover p-5">
+                    <div className="flex items-start gap-3">
+                      {entry.provider.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={entry.provider.logoUrl}
+                          alt={entry.provider.businessName}
+                          className="h-11 w-11 rounded-2xl bg-white object-contain ring-1 ring-black/[0.06]"
+                        />
+                      ) : (
+                        <span
+                          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-black text-white"
+                          style={{ backgroundColor: entry.provider.accent }}
+                          aria-hidden
+                        >
+                          {entry.provider.businessName.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-navy-800">{entry.provider.businessName}</p>
+                        <p className="text-xs text-slate-500">
+                          {entry.lastJobCategory
+                            ? entry.lastJobCategory.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                            : "Service professional"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                      <span className="font-semibold text-navy-800">
+                        {entry.completedJobCount} completed job{entry.completedJobCount === 1 ? "" : "s"}
+                      </span>
+                      {entry.lastCompletedAt ? (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span>
+                            Last:{" "}
+                            {entry.lastCompletedAt.toLocaleDateString("en-ZA", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+
+                    {entry.avgRating !== null ? (
+                      <div className="mt-3">
+                        <div className="flex items-center gap-1.5">
+                          <Stars value={entry.avgRating} />
+                          <span className="text-sm font-bold text-navy-800">{entry.avgRating.toFixed(1)}</span>
+                          <span className="text-xs text-slate-500">({entry.reviewCount} review{entry.reviewCount === 1 ? "" : "s"})</span>
+                        </div>
+                        {entry.latestReview?.comment ? (
+                          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-600">
+                            &ldquo;{entry.latestReview.comment}&rdquo;
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-xs text-slate-400">Not yet rated</p>
+                    )}
+
+                    <div className="mt-3">
+                      <Link
+                        href="/post-job"
+                        className="text-xs font-semibold text-teal-700 hover:underline"
+                      >
+                        Request their services again →
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
