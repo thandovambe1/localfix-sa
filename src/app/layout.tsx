@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
+import BackButton from "@/components/back-button";
 import BackToTop from "@/components/back-to-top";
 
 export const metadata: Metadata = {
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to content
         </a>
         <SiteHeader />
+        <BackButton />
         <main id="main">{children}</main>
         <SiteFooter />
         <BackToTop />
