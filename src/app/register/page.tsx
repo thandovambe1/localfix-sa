@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 const PERKS = [
   { icon: "🧰", title: "Track every job", body: "All your requests, quotes and invoices in one place." },
   { icon: "👛", title: "Rainy-day wallet", body: "Pre-load funds so an emergency repair never has to wait." },
-  { icon: "⭐", title: "Saved professionals", body: "Re-book the trades you already trust in one tap." },
+  { icon: "🤝", title: "Your professionals", body: "Automatically keep a record of every professional you've successfully worked with." },
   { icon: "🏠", title: "Multiple properties", body: "Manage your home, rentals and holiday place together." },
 ];
 
