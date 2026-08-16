@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { PROVINCES, SA_CITIES } from "@/lib/geo";
+import { getPlanDisplays, NORMAL_PRICING_START_LABEL, type ProviderPlanKey } from "@/lib/pricing";
 
 type ComplianceDocument = {
   documentType: string;
@@ -55,43 +56,14 @@ const REGULATED_CATEGORIES = new Set([
 
 const LANGUAGES = ["English", "Afrikaans", "isiZulu", "isiXhosa", "Sesotho", "Setswana", "Sepedi", "Xitsonga", "Tshivenda", "siSwati"];
 
-export type ProviderPlan = "free" | "pro" | "premium";
+export type ProviderPlan = ProviderPlanKey;
 
-export const PLANS: {
-  key: ProviderPlan;
-  name: string;
-  price: string;
-  note: string;
-  multiProvince: boolean;
-  features: string[];
-  popular?: boolean;
-}[] = [
-  {
-    key: "free",
-    name: "Starter",
-    price: "R0",
-    note: "forever · 1 province only",
-    multiProvince: false,
-    features: ["Single service province", "Up to 10 leads / month", "Verified profile & quotes", "Standard support"],
-  },
-  {
-    key: "pro",
-    name: "Pro",
-    price: "R399",
-    note: "per month · multi-branch",
-    multiProvince: true,
-    popular: true,
-    features: ["Multiple provinces / branches", "Unlimited job leads", "Business analytics", "Priority support"],
-  },
-  {
-    key: "premium",
-    name: "Premium",
-    price: "R899",
-    note: "per month · multi-branch",
-    multiProvince: true,
-    features: ["Everything in Pro", "Featured placement", "Account manager", "API access"],
-  },
-];
+/**
+ * Plan cards are derived from the single authoritative pricing source in
+ * src/lib/pricing.ts. Prices shown here are for display only — the server
+ * independently recalculates the payable amount on submission.
+ */
+export const PLANS = getPlanDisplays({ forNewOnboarding: true });
 
 export default function ProviderSignupForm() {
   const [categories, setCategories] = useState<string[]>([]);
@@ -129,6 +101,7 @@ export default function ProviderSignupForm() {
 
   const serviceProvinces = [form.province, ...extraBranches.filter((p) => p !== form.province)];
   const multiProvince = serviceProvinces.length > 1;
+  const selectedPlan = PLANS.find((p) => p.key === plan) ?? null;
 
   function onLogoFile(file: File | undefined) {
     setLogoError("");
@@ -451,16 +424,30 @@ export default function ProviderSignupForm() {
                       : "border-slate-200 hover:-translate-y-0.5 hover:border-teal-300"
                 }`}
               >
-                {p.popular ? (
+                {p.promoActive ? (
+                  <span className="absolute -top-2.5 right-3 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                    Onboarding Special
+                  </span>
+                ) : p.popular ? (
                   <span className="absolute -top-2.5 right-3 rounded-full bg-teal-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                     Popular
                   </span>
                 ) : null}
                 <span className="text-sm font-extrabold text-navy-800">{p.name}</span>
-                <span className="mt-1 text-xl font-black text-navy-800">
-                  {p.price}
+                {p.strikethroughPrice ? (
+                  <span className="mt-1 text-xs font-semibold text-slate-400 line-through">
+                    {p.strikethroughPrice}/month
+                  </span>
+                ) : null}
+                <span className="mt-0.5 text-xl font-black text-navy-800">
+                  {p.displayPrice}
                   <span className="ml-1 text-[11px] font-semibold text-slate-500">{p.note}</span>
                 </span>
+                {p.promoSubtext ? (
+                  <span className="mt-1.5 rounded-lg bg-amber-50 px-2 py-1 text-[10px] font-semibold leading-relaxed text-amber-800">
+                    {p.promoSubtext}
+                  </span>
+                ) : null}
                 <ul className="mt-3 space-y-1.5">
                   {p.features.map((f) => (
                     <li key={f} className="flex gap-1.5 text-xs text-slate-600">
@@ -622,18 +609,46 @@ export default function ProviderSignupForm() {
 
       {status === "error" ? <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-bad">{message}</p> : null}
 
+      {selectedPlan?.promoActive ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <p className="text-sm font-extrabold text-amber-900">🎉 Pro Onboarding Special applied</p>
+          <dl className="mt-3 space-y-1.5 text-sm text-amber-900">
+            <div className="flex justify-between gap-3">
+              <dt>Normal Pro price</dt>
+              <dd className="font-semibold line-through">{selectedPlan.normalPrice}/month</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt>Onboarding discount</dt>
+              <dd className="font-semibold">− {selectedPlan.normalPrice}</dd>
+            </div>
+            <div className="flex justify-between gap-3 border-t border-amber-200 pt-2">
+              <dt className="font-extrabold">Amount payable today</dt>
+              <dd className="text-lg font-black">R0</dd>
+            </div>
+          </dl>
+          <p className="mt-3 text-[11px] font-semibold leading-relaxed text-amber-800">
+            You receive the full Pro package. {selectedPlan.promoSubtext}. The final amount is always confirmed by
+            our servers.
+          </p>
+        </div>
+      ) : null}
+
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <button className="btn btn-accent w-full sm:w-auto" disabled={status === "saving"} type="submit">
           {status === "saving"
             ? "Submitting…"
             : plan === "free"
               ? "Submit free registration"
-              : `Register on ${PLANS.find((p) => p.key === plan)?.name}`}
+              : selectedPlan?.promoActive
+                ? "Register on Pro — R0 today"
+                : `Register on ${selectedPlan?.name ?? "plan"}`}
         </button>
         <p className="text-xs text-slate-500">
           {plan === "free"
             ? "Free forever to register. No credit card."
-            : `Paid plans start after verification. ${serviceProvinces.length} province${serviceProvinces.length === 1 ? "" : "s"} covered.`}{" "}
+            : selectedPlan?.promoActive
+              ? `No payment due today. Normal ${selectedPlan.normalPrice}/month applies from ${NORMAL_PRICING_START_LABEL}.`
+              : `Paid plans start after verification. ${serviceProvinces.length} province${serviceProvinces.length === 1 ? "" : "s"} covered.`}{" "}
           By registering you accept our Terms and POPIA privacy policy.
         </p>
       </div>
