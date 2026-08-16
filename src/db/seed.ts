@@ -114,6 +114,22 @@ create table if not exists jobs (
 );
 alter table jobs add column if not exists customer_id integer;
 
+create table if not exists job_media (
+  id serial primary key,
+  job_id integer not null,
+  uploader_customer_id integer,
+  storage_key text not null,
+  original_name text not null,
+  mime_type text not null,
+  media_type text not null,
+  size_bytes integer not null,
+  file_data text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists job_media_job_idx on job_media (job_id);
+create index if not exists job_media_uploader_idx on job_media (uploader_customer_id);
+
 create table if not exists quotes (
   id serial primary key,
   job_id integer not null,
