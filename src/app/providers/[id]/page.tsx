@@ -152,7 +152,6 @@ export default async function ProviderProfilePage({ params }: { params: Promise<
               Request a quote
             </Link>
             <button className="btn btn-ghost mt-2 w-full">💬 Message business</button>
-            <button className="btn btn-ghost mt-2 w-full">⭐ Save to favourites</button>
           </div>
 
           <div className="card p-6">
