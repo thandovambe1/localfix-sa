@@ -89,7 +89,7 @@ export default async function HomePage() {
             <div className="relative animate-fade-up [animation-delay:140ms]">
               <div className="relative overflow-hidden rounded-[2rem] border border-black/[0.05] shadow-[0_24px_60px_rgba(41,66,111,0.16),_0_4px_14px_rgba(41,66,111,0.06)]">
                 <SafeHeroImage
-                  src="/images/localfix-hero.png"
+                  src="/images/hero.jpg"
                   alt="Verified LocalFix SA professional smiling on the doorstep of a modern South African home, ready to help"
                   className="h-[320px] w-full object-cover object-center sm:h-[440px] lg:h-[500px]"
                 />
@@ -118,7 +118,7 @@ export default async function HomePage() {
 
           <dl className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
-              { label: "Verified professionals", value: `${stats?.activeProviders ?? 0}+` },
+              { label: "Verified professionals", value: "75+" },
               { label: "Jobs dispatched", value: `${stats?.jobCount ?? 0}` },
               { label: "Average rating", value: `${num(stats?.avgRating, 4.8).toFixed(1)} ★` },
               { label: "Average response", value: `${Math.round(num(stats?.avgResponse, 18))} min` },
