@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { customers, inboxMessages, jobs, payments, providers, quotes } from "@/db/schema";
-import { getAdminSession } from "@/lib/auth";
+import { broadcasts, customers, inboxMessages, jobs, payments, providers, quotes } from "@/db/schema";
+import { getAdminSession, getProviderSession } from "@/lib/auth";
 import { getJobQuotes, ready } from "@/lib/queries";
 import { formatZAR } from "@/lib/commission";
 import { aliasMapFor, quoteRevealed } from "@/lib/reveal";
@@ -54,14 +54,54 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await ready();
+
+  const providerSession = await getProviderSession();
+  if (!providerSession) {
+    return Response.json({ error: "Provider login required." }, { status: 401 });
+  }
+
   const { id } = await params;
   const jobId = Number(id);
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
-  const providerId = Number(body.providerId);
+  // Never trust a providerId supplied by the browser. The authenticated
+  // provider session is the sole source of identity.
+  if (body.providerId !== undefined && Number(body.providerId) !== providerSession.id) {
+    return Response.json({ error: "You cannot submit a quote for another provider account." }, { status: 403 });
+  }
+  const providerId = providerSession.id;
   const amount = Number(body.amount);
-  if (!providerId || !amount || amount <= 0) {
-    return Response.json({ error: "A provider and a valid quote amount are required." }, { status: 400 });
+  if (!amount || amount <= 0) {
+    return Response.json({ error: "A valid quote amount is required." }, { status: 400 });
+  }
+
+  const [[job], [provider], [broadcast], [existingQuote]] = await Promise.all([
+    db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1),
+    db.select().from(providers).where(eq(providers.id, providerId)).limit(1),
+    db
+      .select({ id: broadcasts.id })
+      .from(broadcasts)
+      .where(and(eq(broadcasts.jobId, jobId), eq(broadcasts.providerId, providerId)))
+      .limit(1),
+    db
+      .select({ id: quotes.id })
+      .from(quotes)
+      .where(and(eq(quotes.jobId, jobId), eq(quotes.providerId, providerId)))
+      .limit(1),
+  ]);
+
+  if (!job) return Response.json({ error: "Job not found." }, { status: 404 });
+  if (!provider || provider.status !== "active") {
+    return Response.json({ error: "Your provider account is not active." }, { status: 403 });
+  }
+  if (!broadcast) {
+    return Response.json({ error: "This job opportunity was not broadcast to your provider account." }, { status: 403 });
+  }
+  if (!["open", "quoted"].includes(job.status)) {
+    return Response.json({ error: "This job is no longer accepting quotes." }, { status: 409 });
+  }
+  if (existingQuote) {
+    return Response.json({ error: "You have already submitted a quote for this job." }, { status: 409 });
   }
 
   const [quote] = await db
@@ -80,8 +120,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   await db.update(jobs).set({ status: "quoted" }).where(eq(jobs.id, jobId));
 
   // ── Deliver the quote straight to the customer's inbox ──
-  const [job] = await db.select().from(jobs).where(eq(jobs.id, jobId)).limit(1);
-  const [provider] = await db.select().from(providers).where(eq(providers.id, providerId)).limit(1);
 
   if (job && provider) {
     let customerId: number | null = job.customerId ?? null;
