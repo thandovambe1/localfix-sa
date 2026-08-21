@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { providerDocuments, providers } from "@/db/schema";
 import ApplicationDecisionPanel from "@/components/application-decision-panel";
+import FounderDeleteProvider from "@/components/founder-delete-provider";
 import { getAdminSession } from "@/lib/auth";
 import { ready } from "@/lib/queries";
 import { categoryName } from "@/lib/services";
@@ -201,6 +202,10 @@ export default async function AdminApplicationPage({ params }: { params: Promise
               ))}
             </ul>
           </div>
+
+          {session.role === "owner" ? (
+            <FounderDeleteProvider providerId={provider.id} businessName={provider.businessName} />
+          ) : null}
         </aside>
       </div>
     </div>
