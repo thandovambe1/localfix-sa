@@ -120,7 +120,7 @@ export default async function HomePage() {
           <dl className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
               { label: "Verified professionals", value: "80+" },
-              { label: "Jobs dispatched", value: "33" },
+              { label: "Jobs dispatched", value: "39" },
               { label: "Average rating", value: "4.9 ★" },
               { label: "Average response", value: `${Math.round(num(stats?.avgResponse, 18))} min` },
             ].map((s) => (
