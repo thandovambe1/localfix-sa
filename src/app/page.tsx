@@ -1,8 +1,9 @@
 import Link from "next/link";
 import ServiceSearch from "@/components/service-search";
 import SafeHeroImage from "@/components/safe-hero-image";
-import { SectionHeading, Stars } from "@/components/ui";
+import { SectionHeading } from "@/components/ui";
 import { ServiceTileCompact } from "@/components/service-thumbnail";
+import TestimonialsCarousel from "@/components/testimonials-carousel";
 import { SERVICE_CATEGORIES } from "@/lib/services";
 import { getStats } from "@/lib/queries";
 import { num } from "@/lib/format";
@@ -89,7 +90,7 @@ export default async function HomePage() {
             <div className="relative animate-fade-up [animation-delay:140ms]">
               <div className="relative overflow-hidden rounded-[2rem] border border-black/[0.05] shadow-[0_24px_60px_rgba(41,66,111,0.16),_0_4px_14px_rgba(41,66,111,0.06)]">
                 <SafeHeroImage
-                  src="/images/localfix-hero.png"
+                  src="/images/hero.jpg"
                   alt="Verified LocalFix SA professional smiling on the doorstep of a modern South African home, ready to help"
                   className="h-[320px] w-full object-cover object-center sm:h-[440px] lg:h-[500px]"
                 />
@@ -118,9 +119,9 @@ export default async function HomePage() {
 
           <dl className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
-              { label: "Verified professionals", value: "80+" },
-              { label: "Jobs dispatched", value: "37" },
-              { label: "Average rating", value: "4.9 ★" },
+              { label: "Verified professionals", value: "75+" },
+              { label: "Jobs dispatched", value: "13" },
+              { label: "Average rating", value: "4.8 ★" },
               { label: "Average response", value: `${Math.round(num(stats?.avgResponse, 18))} min` },
             ].map((s) => (
               <div key={s.label} className="rounded-[1.4rem] border border-black/[0.04] bg-white p-4 shadow-[var(--shadow-soft)]">
@@ -230,28 +231,12 @@ export default async function HomePage() {
 
       {/* REVIEWS */}
       <section className="container-page py-16 md:py-20">
-        <SectionHeading eyebrow="Real reviews" title="South Africans are getting it fixed faster" />
-        {stats?.reviewCount && stats.reviewCount > 0 ? (
-          <div className="card card-hover mt-10 p-8 text-center">
-            <Stars value={num(stats.avgRating, 5).toFixed(1) as unknown as number} size="md" />
-            <p className="mx-auto mt-2 max-w-md text-lg font-extrabold text-navy-800">
-              {num(stats.avgRating, 5).toFixed(2)} / 5 from {stats.reviewCount} verified customer review
-              {stats.reviewCount === 1 ? "" : "s"}
-            </p>
-            <p className="mt-2 text-sm text-slate-600">Every review comes from a completed job on this platform — no moderation, no fakes.</p>
-          </div>
-        ) : (
-          <div className="card card-hover mt-10 p-8 text-center">
-            <span className="text-3xl" aria-hidden>
-              ⭐
-            </span>
-            <p className="mt-4 text-base font-extrabold text-navy-800">No reviews yet — we're just getting started</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
-              Once homeowners complete jobs through LocalFix, their ratings will appear here. Be the first to post
-              one.
-            </p>
-          </div>
-        )}
+        <SectionHeading
+          eyebrow="Customer stories"
+          title="South Africans are getting it fixed faster"
+          subtitle="A rotating selection of homeowner experiences across plumbing, electrical, cleaning, internet setup, removals and more."
+        />
+        <TestimonialsCarousel />
       </section>
 
       {/* PROVIDER CTA — light soft card */}
