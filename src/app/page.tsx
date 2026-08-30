@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ServiceSearch from "@/components/service-search";
-import SafeHeroImage from "@/components/safe-hero-image";
+import SafeHeroImage from "@/components/safe-hero-image.tsx";
 import { SectionHeading } from "@/components/ui";
 import { ServiceTileCompact } from "@/components/service-thumbnail";
 import TestimonialsCarousel from "@/components/testimonials-carousel";
