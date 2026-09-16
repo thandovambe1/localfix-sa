@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const SLIDE_DURATION_MS = 30_000;
+const SLIDE_DURATION_MS = 12_000;
 
 const HERO_SLIDES = [
   {
@@ -15,7 +15,7 @@ const HERO_SLIDES = [
     alt: "South African home service professionals collaborating in a bright modern kitchen",
   },
   {
-    src: "/images/localfix-provider-hero.png",
+    src: "/images/localfix-hero-2.png",
     alt: "LocalFix SA service provider reviewing a job at a modern South African home",
   },
   {
