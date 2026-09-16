@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ServiceSearch from "@/components/service-search";
-import SafeHeroImage from "@/components/safe-hero-image";
+import HeroSlideshow from "@/components/hero-slideshow";
 import { SectionHeading } from "@/components/ui";
 import { ServiceTileCompact } from "@/components/service-thumbnail";
 import TestimonialsCarousel from "@/components/testimonials-carousel";
@@ -86,31 +86,24 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right — crystal-clear professional hero image */}
-            <div className="relative animate-fade-up [animation-delay:140ms]">
-              <div className="relative overflow-hidden rounded-[2rem] border border-black/[0.05] shadow-[0_24px_60px_rgba(41,66,111,0.16),_0_4px_14px_rgba(41,66,111,0.06)]">
-                <SafeHeroImage
-                  src="/images/localfix-hero.png"
-                  alt="Verified LocalFix SA professional smiling on the doorstep of a modern South African home, ready to help"
-                  className="h-[320px] w-full object-cover object-center sm:h-[440px] lg:h-[500px]"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy-900/30 via-transparent to-transparent" />
+            {/* Right — rotating hero images sit beneath all credibility overlays */}
+            <div className="relative isolate animate-fade-up [animation-delay:140ms]">
+              <HeroSlideshow />
 
-                {/* In-image rating overlay */}
-                <div className="absolute bottom-5 left-5 rounded-2xl bg-navy-900/75 px-4 py-2.5 text-white backdrop-blur-md">
-                  <p className="text-sm font-extrabold">★ {num(stats?.avgRating, 4.8).toFixed(1)} average rating</p>
-                  <p className="text-[11px] text-white/75">from real completed jobs</p>
-                </div>
+              {/* In-image Average Rating overlay — always above the slideshow */}
+              <div className="pointer-events-none absolute bottom-5 left-5 z-40 rounded-2xl bg-navy-900/75 px-4 py-2.5 text-white backdrop-blur-md">
+                <p className="text-sm font-extrabold">★ {num(stats?.avgRating, 4.8).toFixed(1)} average rating</p>
+                <p className="text-[11px] text-white/75">from real completed jobs</p>
               </div>
 
-              {/* Floating trust chip — top left */}
-              <div className="absolute -top-4 left-4 rounded-2xl border border-black/[0.05] bg-white/95 px-4 py-2.5 shadow-[var(--shadow-lift)] backdrop-blur sm:-left-5">
+              {/* Verified Pros overlay — always above the slideshow */}
+              <div className="absolute -top-4 left-4 z-40 rounded-2xl border border-black/[0.05] bg-white/95 px-4 py-2.5 shadow-[var(--shadow-lift)] backdrop-blur sm:-left-5">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Verified pros</p>
                 <p className="text-sm font-extrabold text-navy-800">🛡️ ID · insurance · trade</p>
               </div>
 
-              {/* Floating speed chip — bottom right */}
-              <div className="absolute -bottom-4 right-4 rounded-2xl border border-black/[0.05] bg-white/95 px-4 py-2.5 shadow-[var(--shadow-lift)] backdrop-blur sm:-right-5">
+              {/* Average First Quote overlay — always above the slideshow */}
+              <div className="absolute -bottom-4 right-4 z-40 rounded-2xl border border-black/[0.05] bg-white/95 px-4 py-2.5 shadow-[var(--shadow-lift)] backdrop-blur sm:-right-5">
                 <p className="text-sm font-extrabold text-navy-800">⚡ {Math.round(num(stats?.avgResponse, 18))} min</p>
                 <p className="text-[11px] font-semibold text-slate-500">average first quote</p>
               </div>
@@ -119,9 +112,9 @@ export default async function HomePage() {
 
           <dl className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
-              { label: "Verified professionals", value: "80+" },
-              { label: "Jobs dispatched", value: "39" },
-              { label: "Average rating", value: "4.9 ★" },
+              { label: "Verified professionals", value: "75+" },
+              { label: "Jobs dispatched", value: "13" },
+              { label: "Average rating", value: "4.8 ★" },
               { label: "Average response", value: `${Math.round(num(stats?.avgResponse, 18))} min` },
             ].map((s) => (
               <div key={s.label} className="rounded-[1.4rem] border border-black/[0.04] bg-white p-4 shadow-[var(--shadow-soft)]">
