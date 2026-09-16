@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Countdown, JobChat, QuoteActions, QuoteDocButton } from "@/components/job-client";
+import DeleteJobRequest from "@/components/delete-job-request";
 import MediaGallery from "@/components/media-gallery";
 import { CommissionBreakdown, PayButton, PaymentStatusBadge } from "@/components/payment-section";
 import { QuoteComparePanel } from "@/components/quote-compare";
@@ -58,6 +59,14 @@ export default async function JobPage({
   const customerOwnsJob = Boolean(
     customer && (job.customerId === customer.id || job.customerEmail.toLowerCase() === customer.email.toLowerCase()),
   );
+  const canDeleteRequest =
+    customerOwnsJob &&
+    !acceptedQuote &&
+    !payment &&
+    ["open", "quoted"].includes(job.status) &&
+    !["payment_pending", "accepted", "in_progress", "awaiting_provider_signature", "awaiting_customer_signature", "completed"].includes(
+      job.status,
+    );
 
   // Identity is revealed only for the accepted quote, after payment clears.
   const settled = isPaymentSettled(payment);
@@ -93,6 +102,12 @@ export default async function JobPage({
               <Countdown deadline={job.quoteDeadline ? job.quoteDeadline.toISOString() : null} />
               <span className="ml-auto text-xs font-semibold text-slate-400">{job.reference}</span>
             </div>
+
+            {canDeleteRequest ? (
+              <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                <DeleteJobRequest jobId={job.id} jobReference={job.reference} />
+              </div>
+            ) : null}
 
             <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-navy-800 sm:text-3xl">{job.title}</h1>
             <p className="mt-1 text-sm text-slate-500">
