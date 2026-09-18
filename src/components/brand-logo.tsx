@@ -120,10 +120,22 @@ export default function BrandLogo({
             viewBox="0 0 24 24"
             aria-hidden="true"
             focusable="false"
-            className="ml-1 h-4 w-4 shrink-0 sm:h-5 sm:w-5"
-            fill={GBV_PURPLE}
+            className="gbv-heart gbv-heart--lg ml-1 shrink-0"
           >
-            <path d="M12 20.35a1.15 1.15 0 0 1-.52-.13C7.06 17.79 3.75 14.55 3.75 10.5 3.75 7.93 5.68 6 8.1 6c1.5 0 2.92.74 3.9 1.94C12.98 6.74 14.4 6 15.9 6c2.42 0 4.35 1.93 4.35 4.5 0 4.05-3.31 7.29-7.73 9.72a1.15 1.15 0 0 1-.52.13Z" />
+            <defs>
+              <linearGradient id="brand-gbv-heart-gradient" x1="4" y1="5" x2="21" y2="20" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#c4b5fd" />
+                <stop offset="0.55" stopColor={GBV_PURPLE} />
+                <stop offset="1" stopColor="#5b21b6" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M12 20.35a1.15 1.15 0 0 1-.52-.13C7.06 17.79 3.75 14.55 3.75 10.5 3.75 7.93 5.68 6 8.1 6c1.5 0 2.92.74 3.9 1.94C12.98 6.74 14.4 6 15.9 6c2.42 0 4.35 1.93 4.35 4.5 0 4.05-3.31 7.29-7.73 9.72a1.15 1.15 0 0 1-.52.13Z"
+              fill="url(#brand-gbv-heart-gradient)"
+              stroke="rgba(255,255,255,0.45)"
+              strokeWidth="0.5"
+              strokeLinejoin="round"
+            />
           </svg>
           <span className="sr-only">LocalFix SA stands against gender-based violence and violence against children</span>
         </span>
