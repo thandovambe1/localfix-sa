@@ -131,6 +131,31 @@ export default function SiteFooter() {
       </div>
 
       <div className="relative border-t border-white/10">
+        <div className="container-page border-b border-white/[0.06] py-4">
+          <p className="flex items-center gap-2 text-sm font-bold text-slate-200">
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="gbv-heart gbv-heart--lg shrink-0"
+            >
+              <defs>
+                <linearGradient id="footer-gbv-heart-gradient" x1="4" y1="5" x2="21" y2="20" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stopColor="#c4b5fd" />
+                  <stop offset="0.55" stopColor="#8b5cf6" />
+                  <stop offset="1" stopColor="#6d28d9" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M12 20.35a1.15 1.15 0 0 1-.52-.13C7.06 17.79 3.75 14.55 3.75 10.5 3.75 7.93 5.68 6 8.1 6c1.5 0 2.92.74 3.9 1.94C12.98 6.74 14.4 6 15.9 6c2.42 0 4.35 1.93 4.35 4.5 0 4.05-3.31 7.29-7.73 9.72a1.15 1.15 0 0 1-.52.13Z"
+                fill="url(#footer-gbv-heart-gradient)"
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth="0.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+            LocalFix SA Stands against GBV and violence against women and children
+          </p>
+        </div>
         <div className="container-page flex flex-col gap-3 py-7 text-[13px] font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} LocalFix SA (Pty) Ltd. All rights reserved. Proudly South African 🇿🇦</p>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -143,7 +168,7 @@ export default function SiteFooter() {
               POPIA compliant
             </span>
             <span className="flex items-center gap-1.5 font-bold text-slate-200">
-              ☎️ 0800 LOCALFIX
+              ☎️ 081 055 4566
             </span>
           </p>
         </div>
