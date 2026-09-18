@@ -69,6 +69,48 @@ body {
     border-color: rgba(120, 185, 154, 0.35);
   }
 
+  /**
+   * GBV awareness heart — subtle continuous pulse with a 3D layered glow.
+   */
+  .gbv-heart {
+    display: inline-block;
+    width: 1.35rem;
+    height: 1.35rem;
+    transform-origin: center;
+    animation: gbv-heart-pulse 1.45s ease-in-out infinite;
+    filter: drop-shadow(0 3px 5px rgba(124, 58, 237, 0.32)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.45));
+  }
+
+  .gbv-heart--lg {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  @keyframes gbv-heart-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      filter: drop-shadow(0 3px 5px rgba(124, 58, 237, 0.28)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.45));
+    }
+    18% {
+      transform: scale(1.18);
+      filter: drop-shadow(0 5px 9px rgba(124, 58, 237, 0.42)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
+    }
+    36% {
+      transform: scale(0.97);
+    }
+    54% {
+      transform: scale(1.1);
+      filter: drop-shadow(0 4px 8px rgba(124, 58, 237, 0.38)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gbv-heart {
+      animation: none;
+    }
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
