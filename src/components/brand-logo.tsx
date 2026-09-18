@@ -14,6 +14,8 @@ export interface BrandLogoProps {
 /* Brand inks — pulled straight from the master logo artwork */
 const NAVY = "#0c2f5f";
 const TEAL = "#0f9c96";
+/* Refined awareness purple for LocalFix SA's stance against GBV and child violence. */
+const GBV_PURPLE = "#7c3aed";
 
 /**
  * The LF-house monogram: a navy gable roof with chimney and a 2×2 window
@@ -114,6 +116,16 @@ export default function BrandLogo({
           >
             SA
           </span>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            focusable="false"
+            className="ml-1 h-4 w-4 shrink-0 sm:h-5 sm:w-5"
+            fill={GBV_PURPLE}
+          >
+            <path d="M12 20.35a1.15 1.15 0 0 1-.52-.13C7.06 17.79 3.75 14.55 3.75 10.5 3.75 7.93 5.68 6 8.1 6c1.5 0 2.92.74 3.9 1.94C12.98 6.74 14.4 6 15.9 6c2.42 0 4.35 1.93 4.35 4.5 0 4.05-3.31 7.29-7.73 9.72a1.15 1.15 0 0 1-.52.13Z" />
+          </svg>
+          <span className="sr-only">LocalFix SA stands against gender-based violence and violence against children</span>
         </span>
 
         {showTagline ? (
