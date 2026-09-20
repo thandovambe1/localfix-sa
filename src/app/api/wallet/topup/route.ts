@@ -1,3 +1,4 @@
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { walletTransactions } from "@/db/schema";
 import { getCustomerSession } from "@/lib/auth";
@@ -36,7 +37,19 @@ export async function POST(request: Request) {
     customerId: session.id,
   });
 
-  if (!result.success) return Response.json({ error: result.error }, { status: 502 });
+  if (!result.success) {
+    await db.insert(walletTransactions).values({
+      customerId: session.id,
+      type: "topup",
+      amountCents,
+      balanceAfterCents: 0,
+      description: "Failed wallet top-up attempt via Yoco",
+      reference,
+      status: "failed",
+      failureReason: result.error,
+    });
+    return Response.json({ error: result.error }, { status: 502 });
+  }
 
   // Record a pending ledger entry — the webhook completes it.
   await db.insert(walletTransactions).values({
@@ -49,6 +62,18 @@ export async function POST(request: Request) {
     status: "pending",
     yocoCheckoutId: result.checkout.id,
   });
+
+  // Duplicate checkout clicks for the same amount should not stack pending rows.
+  await db
+    .delete(walletTransactions)
+    .where(
+      and(
+        eq(walletTransactions.customerId, session.id),
+        eq(walletTransactions.status, "pending"),
+        eq(walletTransactions.type, "topup"),
+        ne(walletTransactions.yocoCheckoutId, result.checkout.id),
+      ),
+    );
 
   return Response.json({ ok: true, reference, redirectUrl: result.checkout.redirectUrl });
 }
