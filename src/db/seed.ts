@@ -347,6 +347,7 @@ create table if not exists wallet_transactions (
   status text not null default 'completed',
   job_id integer,
   yoco_checkout_id text,
+  failure_reason text,
   created_at timestamptz not null default now()
 );
 
