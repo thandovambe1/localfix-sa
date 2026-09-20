@@ -11,6 +11,8 @@
  *   NEXT_PUBLIC_BASE_URL — Your public site URL for redirects
  */
 
+import { buildYocoCheckoutPayload, readYocoError } from "@/lib/yoco-checkout";
+
 const YOCO_API = "https://payments.yoco.com/api/checkouts";
 
 function getSecretKey(): string {
@@ -23,12 +25,13 @@ function getSecretKey(): string {
 }
 
 function getBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_BASE_URL ??
-    process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000"
-  );
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return "http://localhost:3000";
 }
 
 export type YocoCheckoutRequest = {
@@ -79,42 +82,44 @@ export async function createYocoCheckout(
   }
 
   try {
+    const payload = buildYocoCheckoutPayload({
+      amountCents: req.amountCents,
+      urls: {
+        successUrl: `${baseUrl}/payments/success?reference=${req.reference}&jobId=${req.jobId}`,
+        cancelUrl: `${baseUrl}/payments/cancelled?reference=${req.reference}&jobId=${req.jobId}`,
+        failureUrl: `${baseUrl}/payments/failed?reference=${req.reference}&jobId=${req.jobId}`,
+      },
+      metadata: {
+        localfix_reference: req.reference,
+        job_id: String(req.jobId),
+        quote_id: String(req.quoteId),
+        provider_id: String(req.providerId),
+        commission_cents: String(req.commissionCents),
+        provider_payout_cents: String(req.providerPayoutCents),
+        kind: "job_payment",
+      },
+      lineItems: [
+        {
+          displayName: `LocalFix Job Payment (${req.reference})`,
+          quantity: 1,
+          priceCents: req.amountCents,
+        },
+      ],
+    });
+
     const response = await fetch(YOCO_API, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${secretKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        amount: req.amountCents,
-        currency: "ZAR",
-        successUrl: `${baseUrl}/payments/success?reference=${req.reference}&jobId=${req.jobId}`,
-        cancelUrl: `${baseUrl}/payments/cancelled?reference=${req.reference}&jobId=${req.jobId}`,
-        failureUrl: `${baseUrl}/payments/failed?reference=${req.reference}&jobId=${req.jobId}`,
-        metadata: {
-          localfix_reference: req.reference,
-          job_id: String(req.jobId),
-          quote_id: String(req.quoteId),
-          provider_id: String(req.providerId),
-          commission_cents: String(req.commissionCents),
-          provider_payout_cents: String(req.providerPayoutCents),
-        },
-        lineItems: [
-          {
-            displayName: `LocalFix Job Payment (${req.reference})`,
-            quantity: 1,
-            pricingDetails: {
-              price: req.amountCents,
-            },
-          },
-        ],
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      const errBody = await response.text();
-      console.error("[Yoco] Checkout creation failed:", response.status, errBody);
-      return { success: false, error: `Yoco API error: ${response.status}` };
+      const err = await readYocoError(response);
+      console.error("[Yoco] Checkout creation failed:", err.status, err.raw);
+      return { success: false, error: `Payment gateway rejected the request: ${err.message}` };
     }
 
     const checkout = (await response.json()) as YocoCheckoutResponse;
@@ -145,33 +150,37 @@ export async function createWalletTopupCheckout(req: {
   }
 
   try {
-    const response = await fetch(YOCO_API, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: req.amountCents,
-        currency: "ZAR",
+    const payload = buildYocoCheckoutPayload({
+      amountCents: req.amountCents,
+      urls: {
         successUrl,
         cancelUrl,
         failureUrl: `${baseUrl}/dashboard/customer?topup=failed`,
-        metadata: {
-          localfix_reference: req.reference,
-          customer_id: String(req.customerId),
-          kind: "wallet_topup",
+      },
+      metadata: {
+        localfix_reference: req.reference,
+        customer_id: String(req.customerId),
+        kind: "wallet_topup",
+      },
+      lineItems: [
+        {
+          displayName: `LocalFix wallet top-up (${req.reference})`,
+          quantity: 1,
+          priceCents: req.amountCents,
         },
-        lineItems: [
-          {
-            displayName: `LocalFix wallet top-up (${req.reference})`,
-            quantity: 1,
-            pricingDetails: { price: req.amountCents },
-          },
-        ],
-      }),
+      ],
+    });
+
+    const response = await fetch(YOCO_API, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      console.error("[Yoco] Wallet checkout failed:", response.status, await response.text());
-      return { success: false, error: `Yoco API error: ${response.status}` };
+      const err = await readYocoError(response);
+      console.error("[Yoco] Wallet checkout failed:", err.status, err.raw);
+      return { success: false, error: `Payment gateway rejected the request: ${err.message}` };
     }
 
     return { success: true, checkout: (await response.json()) as YocoCheckoutResponse };
@@ -195,6 +204,11 @@ export function verifyWebhookSignature(
     console.warn("[Yoco] No YOCO_WEBHOOK_SECRET — accepting webhook without verification");
     return true;
   }
+  // In production with a webhook secret, you'd verify HMAC-SHA256 here
+  // For now, accept — Yoco's webhook signature verification would go here
+  return true;
+}
+
   // In production with a webhook secret, you'd verify HMAC-SHA256 here
   // For now, accept — Yoco's webhook signature verification would go here
   return true;
