@@ -46,6 +46,13 @@ export default async function CustomerDashboard({
               Create a free account
             </Link>
           </div>
+          <p className="mt-4 text-xs text-slate-500">
+            If you already signed in but still see this page, refresh the browser or open{" "}
+            <Link href="/dashboard/customer" className="font-semibold text-teal-700 hover:underline">
+              my dashboard
+            </Link>
+            .
+          </p>
         </div>
       </div>
     );
