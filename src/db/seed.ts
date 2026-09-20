@@ -347,9 +347,14 @@ create table if not exists wallet_transactions (
   status text not null default 'completed',
   job_id integer,
   yoco_checkout_id text,
-  failure_reason text,
   created_at timestamptz not null default now()
 );
+alter table wallet_transactions add column if not exists balance_after_cents integer not null default 0;
+alter table wallet_transactions add column if not exists job_id integer;
+alter table wallet_transactions add column if not exists yoco_checkout_id text;
+create index if not exists wallet_transactions_customer_idx on wallet_transactions (customer_id);
+create index if not exists wallet_transactions_reference_idx on wallet_transactions (reference);
+create index if not exists wallet_transactions_checkout_idx on wallet_transactions (yoco_checkout_id);
 
 create table if not exists inbox_messages (
   id serial primary key,
