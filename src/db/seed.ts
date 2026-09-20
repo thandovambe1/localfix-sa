@@ -349,12 +349,11 @@ create table if not exists wallet_transactions (
   yoco_checkout_id text,
   created_at timestamptz not null default now()
 );
-alter table wallet_transactions add column if not exists balance_after_cents integer not null default 0;
+-- Self-heal production databases created before these columns existed.
+alter table customers add column if not exists wallet_cents integer not null default 0;
+alter table wallet_transactions add column if not exists status text not null default 'completed';
 alter table wallet_transactions add column if not exists job_id integer;
 alter table wallet_transactions add column if not exists yoco_checkout_id text;
-create index if not exists wallet_transactions_customer_idx on wallet_transactions (customer_id);
-create index if not exists wallet_transactions_reference_idx on wallet_transactions (reference);
-create index if not exists wallet_transactions_checkout_idx on wallet_transactions (yoco_checkout_id);
 
 create table if not exists inbox_messages (
   id serial primary key,
