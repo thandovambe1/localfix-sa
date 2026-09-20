@@ -46,11 +46,12 @@ export default function AccountMenu({ mobile = false }: { mobile?: boolean }) {
   }, []);
 
   async function signOut() {
-    await fetch("/api/auth/me", { method: "POST" });
+    await fetch("/api/auth/me", { method: "POST", credentials: "same-origin" });
     setMe(null);
     setOpen(false);
-    router.push("/");
+    await router.push("/");
     router.refresh();
+    window.setTimeout(() => window.location.assign("/"), 200);
   }
 
   if (!loaded) {
