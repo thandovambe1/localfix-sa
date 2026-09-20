@@ -19,13 +19,26 @@ export function CustomerLoginForm({ next }: { next?: string }) {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Sign in failed");
-      router.push(next && next.startsWith("/") ? next : "/dashboard/customer");
+
+      // Confirm the auth cookie landed before navigating away from the login page.
+      const me = await fetch("/api/auth/me", { credentials: "include" })
+        .then((r) => r.json())
+        .catch(() => ({ customer: null }));
+      if (!me.customer) throw new Error("Sign in succeeded, but your dashboard session could not be confirmed. Please try again.");
+
+      const destination = next && next.startsWith("/") ? next : "/dashboard/customer";
+      await router.push(destination);
       router.refresh();
+      // Hard fallback for production browsers where SPA navigation is interrupted.
+      window.setTimeout(() => {
+        window.location.assign(destination);
+      }, 200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
       setBusy(false);
@@ -136,7 +149,7 @@ export function CustomerRegisterForm({ next }: { next?: string }) {
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
-        credentials: "same-origin",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -147,18 +160,18 @@ export function CustomerRegisterForm({ next }: { next?: string }) {
       if (!res.ok) throw new Error(data.error ?? "Registration failed");
 
       // Confirm the auth cookie landed before navigating.
-      const me = await fetch("/api/auth/me", { credentials: "same-origin" })
+      const me = await fetch("/api/auth/me", { credentials: "include" })
         .then((r) => r.json())
         .catch(() => ({ customer: null }));
       if (!me.customer) throw new Error("Your account was created, but sign-in could not be confirmed. Please try logging in.");
 
       const destination = next && next.startsWith("/") ? next : "/dashboard/customer?welcome=1";
-      router.push(destination);
+      await router.push(destination);
       router.refresh();
       // Hard fallback for production browsers in case SPA navigation is interrupted.
-      setTimeout(() => {
+      window.setTimeout(() => {
         window.location.assign(destination);
-      }, 150);
+      }, 200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
       setBusy(false);
