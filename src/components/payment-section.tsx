@@ -29,7 +29,7 @@ export function CommissionBreakdown({
     <div className="card overflow-hidden">
       <div className="border-b border-slate-100 bg-mist px-5 py-3">
         <h3 className="text-sm font-bold text-navy-800">💳 Payment breakdown</h3>
-        <p className="text-xs text-slate-500">Payments are processed securely via Yoco</p>
+        <p className="text-xs text-slate-500">Pay securely via Yoco — Visa, Mastercard, Apple Pay &amp; Google Pay</p>
       </div>
       <div className="space-y-3 p-5">
         <Row label="Quoted amount" value={zarFromCents(totalCents)} bold />
@@ -113,7 +113,7 @@ export function PayButton({
             Creating secure checkout…
           </span>
         ) : (
-          <>💳 Pay {zarFromCents(totalCents)} via Yoco</>
+          <>💳 Pay {zarFromCents(totalCents)} — Card · Apple Pay · Google Pay</>
         )}
       </button>
 
@@ -126,7 +126,7 @@ export function PayButton({
         <span>·</span>
         <span>PCI DSS compliant</span>
         <span>·</span>
-        <span>Powered by Yoco</span>
+        <span>Powered by Yoco · Apple Pay &amp; Google Pay supported</span>
       </div>
     </div>
   );
