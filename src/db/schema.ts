@@ -437,6 +437,7 @@ export const walletTransactions = pgTable("wallet_transactions", {
   status: text("status").notNull().default("completed"),
   jobId: integer("job_id"),
   yocoCheckoutId: text("yoco_checkout_id"),
+  failureReason: text("failure_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
