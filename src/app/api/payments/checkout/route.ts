@@ -6,6 +6,7 @@ import { createYocoCheckout } from "@/lib/yoco";
 import { ready } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /**
  * POST /api/payments/checkout
@@ -14,15 +15,18 @@ export const dynamic = "force-dynamic";
  * The customer pays the full quote amount; LocalFix SA keeps 13% commission.
  *
  * Body: { quoteId: number }
+ *
+ * Always responds with JSON — including on unexpected errors.
  */
 export async function POST(request: Request) {
-  await ready();
+  try {
+    await ready();
 
-  const body = (await request.json().catch(() => ({}))) as { quoteId?: number };
-  const quoteId = Number(body.quoteId);
-  if (!quoteId) {
-    return Response.json({ error: "quoteId is required" }, { status: 400 });
-  }
+    const body = (await request.json().catch(() => ({}))) as { quoteId?: number };
+    const quoteId = Number(body.quoteId);
+    if (!quoteId) {
+      return Response.json({ error: "quoteId is required" }, { status: 400 });
+    }
 
   // Load the accepted quote
   const [quote] = await db.select().from(quotes).where(eq(quotes.id, quoteId)).limit(1);
@@ -56,6 +60,14 @@ export async function POST(request: Request) {
 
   if (!result.success) {
     return Response.json({ error: result.error }, { status: 502 });
+  }
+
+  if (!result.checkout?.redirectUrl) {
+    console.error("[payments-checkout] Yoco checkout missing redirectUrl");
+    return Response.json(
+      { error: "Payment provider returned an incomplete checkout. Please try again." },
+      { status: 502 },
+    );
   }
 
   // Record payment in our ledger
@@ -92,4 +104,11 @@ export async function POST(request: Request) {
     redirectUrl: result.checkout.redirectUrl,
     breakdown: commission.display,
   });
+  } catch (err) {
+    console.error("[payments-checkout] unexpected error:", err);
+    return Response.json(
+      { error: "Something went wrong starting your payment. Please try again." },
+      { status: 500 },
+    );
+  }
 }
