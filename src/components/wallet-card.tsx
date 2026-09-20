@@ -1,42 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 /** Suggested top-up amounts in rands (client-safe copy). */
 const TOPUP_PRESETS = [250, 500, 1000, 2500, 5000];
 
 function zar(cents: number) {
   return `R${(cents / 100).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-/**
- * Parse a JSON API response defensively. Never throws a raw JS exception
- * at the user — empty bodies, HTML error pages and network glitches all
- * become friendly, actionable messages.
- */
-async function readJsonBody<T extends Record<string, unknown>>(res: Response): Promise<T> {
-  const text = await res.text().catch(() => "");
-  if (!text) {
-    throw new Error(
-      res.status === 401
-        ? "Your session expired. Please sign in again."
-        : "LocalFix did not respond. Please try again in a moment.",
-    );
-  }
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    if (res.status === 401) throw new Error("Your session expired. Please sign in again.");
-    throw new Error("LocalFix returned an unexpected response. Please try again.");
-  }
-}
-
-function friendlyHttpError(status: number): string {
-  if (status === 401) return "Your session expired. Please sign in again.";
-  if (status === 429) return "Too many attempts. Please wait a moment and try again.";
-  if (status >= 500) return "LocalFix is having trouble right now. Please try again in a moment.";
-  return "Could not start top-up. Please try again.";
 }
 
 export function WalletCard({ balanceCents }: { balanceCents: number }) {
@@ -62,73 +33,36 @@ export function WalletCard({ balanceCents }: { balanceCents: number }) {
     setBusy(true);
     setError("");
     try {
-      let res: Response;
+      const res = await fetch("/api/wallet/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: value }),
+      });
+
+      // Defensive parse: the server may return an empty or non-JSON body
+      // (e.g. a 500 from an unhandled error). Never crash the UI.
+      let data: { redirectUrl?: string; error?: string } = {};
       try {
-        res = await fetch("/api/wallet/topup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: value }),
-        });
+        const text = await res.text();
+        data = text ? (JSON.parse(text) as typeof data) : {};
       } catch {
-        throw new Error("Could not reach LocalFix. Check your connection and try again.");
+        data = {};
       }
-      const data = await readJsonBody<{ redirectUrl?: string; error?: string }>(res);
+
       if (!res.ok || !data.redirectUrl) {
-        throw new Error(data.error || friendlyHttpError(res.status));
+        throw new Error(
+          data.error ||
+            (res.status === 401
+              ? "Your session has expired. Please sign in again."
+              : "We couldn't start your top-up right now. Please try again in a moment, or contact support if this keeps happening."),
+        );
       }
       window.location.href = data.redirectUrl;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong starting your top-up.");
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
       setBusy(false);
     }
   }
-
-  /**
-   * After returning from Yoco (?topup=success&reference=...), poll our own
-   * ledger until the webhook credits the wallet, then refresh the balance.
-   */
-  const [verifying, setVerifying] = useState<string | null>(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("topup") !== "success") return;
-    const referenceParam = params.get("reference");
-    if (!referenceParam) return;
-    const reference: string = referenceParam;
-
-    let cancelled = false;
-    let attempts = 0;
-    setVerifying("Confirming your payment with Yoco…");
-
-    async function poll() {
-      if (cancelled) return;
-      attempts += 1;
-      try {
-        const res = await fetch(`/api/wallet/topup/status?reference=${encodeURIComponent(reference)}`);
-        const data = await readJsonBody<{ credited?: boolean; status?: string; error?: string }>(res);
-        if (data.credited) {
-          setVerifying(null);
-          router.refresh();
-          return;
-        }
-      } catch {
-        /* keep polling — transient errors are expected during redirect */
-      }
-      if (attempts >= 15) {
-        setVerifying(
-          "Your payment is still being confirmed. Your balance will update automatically — you can refresh this page in a moment.",
-        );
-        return;
-      }
-      setTimeout(poll, 2000);
-    }
-
-    poll();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function withdraw() {
     const value = Number(wdAmount);
@@ -152,7 +86,7 @@ export function WalletCard({ balanceCents }: { balanceCents: number }) {
           accountType: wdType,
         }),
       });
-      const data = await readJsonBody<{ error?: string }>(res);
+      const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Could not request withdrawal");
       setPanel(null);
       setWdAmount("");
@@ -179,11 +113,6 @@ export function WalletCard({ balanceCents }: { balanceCents: number }) {
           <p className="mt-1 text-xs text-slate-600">
             Available to spend instantly on any job — no card needed at checkout.
           </p>
-          {verifying ? (
-            <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700" role="status">
-              ⏳ {verifying}
-            </p>
-          ) : null}
 
           <div className="mt-5 flex flex-wrap gap-2">
             <button
