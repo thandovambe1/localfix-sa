@@ -5,6 +5,7 @@ import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
 import BackButton from "@/components/back-button";
 import BackToTop from "@/components/back-to-top";
+import { ChristmasBanner, ChristmasSnowfall } from "@/components/christmas-decor";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://localfix.co.za"),
@@ -49,11 +50,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
+        <ChristmasBanner />
         <SiteHeader />
         <BackButton />
         <main id="main">{children}</main>
         <SiteFooter />
         <BackToTop />
+        <ChristmasSnowfall />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
