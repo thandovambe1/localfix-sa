@@ -69,48 +69,6 @@ body {
     border-color: rgba(120, 185, 154, 0.35);
   }
 
-  /**
-   * GBV awareness heart — subtle continuous pulse with a 3D layered glow.
-   */
-  .gbv-heart {
-    display: inline-block;
-    width: 1.35rem;
-    height: 1.35rem;
-    transform-origin: center;
-    animation: gbv-heart-pulse 1.45s ease-in-out infinite;
-    filter: drop-shadow(0 3px 5px rgba(124, 58, 237, 0.32)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.45));
-  }
-
-  .gbv-heart--lg {
-    width: 1.55rem;
-    height: 1.55rem;
-  }
-
-  @keyframes gbv-heart-pulse {
-    0%,
-    100% {
-      transform: scale(1);
-      filter: drop-shadow(0 3px 5px rgba(124, 58, 237, 0.28)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.45));
-    }
-    18% {
-      transform: scale(1.18);
-      filter: drop-shadow(0 5px 9px rgba(124, 58, 237, 0.42)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
-    }
-    36% {
-      transform: scale(0.97);
-    }
-    54% {
-      transform: scale(1.1);
-      filter: drop-shadow(0 4px 8px rgba(124, 58, 237, 0.38)) drop-shadow(0 1px 1px rgba(255, 255, 255, 0.55));
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .gbv-heart {
-      animation: none;
-    }
-  }
-
   .btn {
     display: inline-flex;
     align-items: center;
@@ -286,6 +244,80 @@ body {
 
 .pulse-ring {
   animation: pulseRing 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* ---------- Christmas theme ---------- */
+
+@keyframes christmas-shimmer {
+  0% {
+    background-position: 0% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.christmas-banner {
+  background: linear-gradient(100deg, #7f1d1d, #b91c1c 22%, #14532d 55%, #0f5132 78%, #7f1d1d);
+  background-size: 200% 100%;
+  animation: christmas-shimmer 9s linear infinite;
+  border-bottom: 2px solid #fbbf24;
+}
+
+@keyframes christmas-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.82);
+  }
+}
+
+.christmas-bulb {
+  display: block;
+  width: 10px;
+  height: 14px;
+  border-radius: 9999px 9999px 9999px 9999px / 60% 60% 40% 40%;
+  animation: christmas-twinkle 2.4s ease-in-out infinite;
+}
+
+@keyframes christmas-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.25), var(--shadow-soft);
+  }
+  50% {
+    box-shadow: 0 0 26px 4px rgba(220, 38, 38, 0.22), var(--shadow-soft);
+  }
+}
+
+.christmas-glow {
+  animation: christmas-glow-pulse 3.2s ease-in-out infinite;
+}
+
+.christmas-headline {
+  background: linear-gradient(92deg, #b91c1c 5%, #15803d 45%, #0f766e 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes pulse3d {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 2px 4px rgba(124, 58, 237, 0.3));
+  }
+  50% {
+    transform: scale(1.18);
+    filter: drop-shadow(0 4px 10px rgba(124, 58, 237, 0.5));
+  }
+}
+
+.animate-pulse3d {
+  animation: pulse3d 2s ease-in-out infinite;
 }
 
 @keyframes shimmer {
