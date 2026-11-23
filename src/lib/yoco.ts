@@ -10,17 +10,16 @@
  *   NEXT_PUBLIC_BASE_URL — Your public site URL for redirects
  */
 
-const YOCO_API = "https://payments.yoco.com/api/checkout";
+import { getPublicBaseUrl, getYocoSecretKey } from "@/lib/yoco-config";
+
+const YOCO_API = "https://payments.yoco.com/api/checkouts";
 
 function getSecretKey(): string {
-  return process.env.YOCO_SECRET_KEY ?? "";
+  return getYocoSecretKey();
 }
 
 function getBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_BASE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-  );
+  return getPublicBaseUrl();
 }
 
 export type YocoCheckoutRequest = {
@@ -95,11 +94,6 @@ export async function createYocoCheckout(
         cancelUrl: `${baseUrl}/payments/cancelled?reference=${req.reference}&jobId=${req.jobId}`,
         failureUrl: `${baseUrl}/payments/failed?reference=${req.reference}&jobId=${req.jobId}`,
         clientReferenceId: req.reference,
-        form: {
-          name: "true",
-          email: "true",
-          address: { line1: "true", line2: "false", city: "true", province: "true", postalCode: "true" },
-        },
         metadata: {
           localfix_reference: req.reference,
           job_id: String(req.jobId),
@@ -162,11 +156,6 @@ export async function createWalletTopupCheckout(req: {
         cancelUrl,
         failureUrl: `${baseUrl}/dashboard/customer?topup=failed&reference=${req.reference}`,
         clientReferenceId: req.reference,
-        form: {
-          name: "true",
-          email: "true",
-          address: { line1: "true", line2: "false", city: "true", province: "true", postalCode: "true" },
-        },
         metadata: {
           localfix_reference: req.reference,
           customer_id: String(req.customerId),
