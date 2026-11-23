@@ -15,23 +15,23 @@ const HERO_SLIDES = [
     alt: "Verified LocalFix SA professional ready to help at a modern South African home",
   },
   {
-    src: "/images/hero-2.png",
+    src: "/images/localfix-hero-2.png",
     alt: "South African home service professionals collaborating in a bright modern kitchen",
   },
   {
-    src: "/images/provider-hero.png",
+    src: "/images/localfix-provider-hero.png",
     alt: "LocalFix SA service provider reviewing a job at a modern South African home",
   },
   {
-    src: "/images/hero-3.png",
+    src: "/images/localfix-hero-3.png",
     alt: "Professional South African electrician checking a modern home's electrical installation",
   },
   {
-    src: "/images/hero-4.png",
+    src: "/images/localfix-hero-4.png",
     alt: "Homeowner and LocalFix SA professional reviewing completed home maintenance work",
   },
   {
-    src: "/images/hero-5.png",
+    src: "/images/localfix-hero-5.png",
     alt: "South African technician inspecting solar panels at a modern suburban home",
   },
 ] as const;
