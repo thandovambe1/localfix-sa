@@ -33,13 +33,17 @@ export default function SiteHeader() {
         scrolled ? "border-slate-200/80 bg-white/90 backdrop-blur-md" : "border-transparent bg-white"
       }`}
     >
+      <div className="christmas-garland" aria-hidden="true" />
+      <div
+        className="christmas-banner px-4 py-2 text-center text-[11px] font-bold uppercase leading-relaxed tracking-[0.14em] sm:text-xs"
+        role="note"
+      >
+        <span aria-hidden="true">🎄</span> Merry Christmas from LocalFix SA
+        <span className="hidden sm:inline"> · Safe, happy homes this festive season</span>
+        <span aria-hidden="true"> ✨</span>
+      </div>
       <div className="container-page flex h-16 items-center justify-between gap-4 md:h-[72px]">
-        <span className="relative inline-flex">
-          <BrandLogo size="md" showTagline={true} />
-          <span aria-hidden className="pointer-events-none absolute -right-4 -top-2 rotate-12 text-xl drop-shadow">
-            🎅
-          </span>
-        </span>
+        <BrandLogo size="md" showTagline={true} />
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV.map((item) => (
@@ -92,10 +96,6 @@ export default function SiteHeader() {
           <AccountMenu mobile />
         </div>
       ) : null}
-      <div
-        aria-hidden
-        className="h-1.5 w-full bg-[linear-gradient(90deg,#dc2626_0%,#dc2626_18%,#fbbf24_18%,#fbbf24_36%,#15803d_36%,#15803d_54%,#fbbf24_54%,#fbbf24_72%,#dc2626_72%,#dc2626_90%,#15803d_90%)]"
-      />
     </header>
   );
 }
