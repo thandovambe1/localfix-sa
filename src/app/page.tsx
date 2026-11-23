@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ServiceSearch from "@/components/service-search";
+import { ChristmasLights } from "@/components/christmas-decor";
 import HeroSlideshow from "@/components/hero-slideshow";
 import { SectionHeading } from "@/components/ui";
 import { ServiceTileCompact } from "@/components/service-thumbnail";
@@ -59,13 +60,16 @@ export default async function HomePage() {
         </div>
 
         <div className="container-page relative py-12 md:py-16 lg:py-20">
+          <ChristmasLights count={28} className="mb-6" />
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             {/* Left — copy, actions & search */}
             <div className="mx-auto flex max-w-2xl animate-fade-up flex-col items-center text-center lg:mx-0 lg:items-start lg:text-left">
-              <span className="chip !bg-white text-navy-700 shadow-sm ring-1 ring-black/[0.04]">🇿🇦 Live in 9 provinces · Free for customers</span>
+              <span className="chip !border-red-200 !bg-white text-navy-700 shadow-sm ring-1 ring-black/[0.04]">
+                🎄 Festive Season · Pros on call through Christmas &amp; New Year
+              </span>
               <h1 className="mt-5 text-[2.2rem] font-extrabold leading-[1.06] tracking-tight text-navy-900 sm:text-5xl lg:text-[3.35rem]">
                 Find trusted professionals near you in{" "}
-                <span className="bg-gradient-to-r from-navy-600 to-teal-600 bg-clip-text text-transparent">minutes.</span>
+                <span className="christmas-headline">minutes. 🎅</span>
               </h1>
               <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-slate-600 sm:text-[17px]">
                 Whether it&apos;s a leaking tap, moving house, electrical emergency or complete home renovation, LocalFix
@@ -83,6 +87,16 @@ export default async function HomePage() {
 
               <div className="mt-9 w-full max-w-xl">
                 <ServiceSearch />
+              </div>
+
+              <div className="christmas-glow mt-6 w-full max-w-xl rounded-2xl border border-red-200/70 bg-white/85 p-4 text-center backdrop-blur sm:text-left">
+                <p className="text-sm font-bold text-navy-800">
+                  🎅 Holiday home prep, sorted — emergency plumbers &amp; electricians available 24/7, even on
+                  Christmas Day 🎁
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  From braais to guest rooms, get your home holiday-ready with verified local pros.
+                </p>
               </div>
             </div>
 
@@ -112,17 +126,88 @@ export default async function HomePage() {
 
           <dl className="mx-auto mt-12 grid max-w-5xl grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {[
-              { label: "Verified professionals", value: "85+" },
-              { label: "Jobs dispatched", value: "39" },
+              { label: "Verified professionals", value: "75+" },
+              { label: "Jobs dispatched", value: "13" },
               { label: "Average rating", value: "4.8 ★" },
               { label: "Average response", value: `${Math.round(num(stats?.avgResponse, 18))} min` },
-            ].map((s) => (
-              <div key={s.label} className="rounded-[1.4rem] border border-black/[0.04] bg-white p-4 shadow-[var(--shadow-soft)]">
+            ].map((s, i) => (
+              <div
+                key={s.label}
+                className={`relative rounded-[1.4rem] border bg-white p-4 shadow-[var(--shadow-soft)] ${
+                  i === 0 ? "border-red-200 ring-2 ring-red-300/60" : "border-black/[0.04]"
+                }`}
+              >
+                {i === 0 ? (
+                  <span aria-hidden className="absolute -right-2 -top-3 rotate-12 text-xl drop-shadow">
+                    🎅
+                  </span>
+                ) : null}
                 <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{s.label}</dt>
                 <dd className="mt-1 text-xl font-extrabold text-navy-800 sm:text-2xl">{s.value}</dd>
               </div>
             ))}
           </dl>
+        </div>
+      </section>
+
+      {/* FESTIVE SEASON */}
+      <section className="container-page py-16 md:py-20">
+        <ChristmasLights count={30} className="mb-8" />
+        <SectionHeading
+          eyebrow="🎄 Festive season"
+          title="Get your home holiday-ready"
+          subtitle="Guest rooms, braai areas, fairy lights and last-minute fixes — verified pros are on call right through Christmas and New Year."
+        />
+        <div className="mx-auto mt-10 grid max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              icon: "🧹",
+              title: "Guest-ready deep cleans",
+              body: "Sparkling homes for holiday visitors, from kitchens to guest bathrooms.",
+              href: "/post-job?category=cleaning",
+            },
+            {
+              icon: "💡",
+              title: "Festive lights & electrical",
+              body: "Safe fairy-light installs, extra plugs and holiday electrical checks.",
+              href: "/post-job?category=electrical",
+            },
+            {
+              icon: "🍖",
+              title: "Braai & outdoor areas",
+              body: "Patios, gardens and entertainment spaces ready for long summer evenings.",
+              href: "/post-job?category=garden-services",
+            },
+            {
+              icon: "🚨",
+              title: "Holiday emergency cover",
+              body: "Burst geysers and power faults don't take holidays — neither do our 24/7 pros.",
+              href: "/post-job?urgency=emergency",
+            },
+          ].map((c) => (
+            <Link
+              key={c.title}
+              href={c.href}
+              className="card card-hover group block p-6 text-center ring-1 ring-red-100"
+            >
+              <span
+                className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-red-50 to-green-50 text-3xl ring-1 ring-red-100 transition group-hover:scale-110"
+                aria-hidden
+              >
+                {c.icon}
+              </span>
+              <span className="mt-4 block text-base font-bold text-navy-800">{c.title}</span>
+              <span className="mt-2 block text-sm leading-relaxed text-slate-600">{c.body}</span>
+              <span className="mt-3 inline-block text-xs font-bold text-red-700 group-hover:underline">
+                Book now →
+              </span>
+            </Link>
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link href="/post-job" className="btn btn-accent">
+            🎁 Book your festive fix — it&apos;s free to post
+          </Link>
         </div>
       </section>
 
@@ -239,7 +324,10 @@ export default async function HomePage() {
           <div className="pointer-events-none absolute -bottom-28 -left-24 h-80 w-80 rounded-full bg-teal-100 blur-3xl opacity-60" />
           <div className="relative mx-auto grid max-w-5xl gap-8 md:grid-cols-2 md:items-center">
             <div className="mx-auto max-w-xl md:text-left">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">For service providers</p>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5 text-xs font-extrabold text-white shadow">
+                🎄 Festive rush: homeowners are booking now
+              </span>
+              <p className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-teal-700">For service providers</p>
               <h2 className="mt-3 text-2xl font-extrabold leading-tight text-navy-900 sm:text-4xl">
                 Free leads. Real customers. Zero cold calling.
               </h2>
