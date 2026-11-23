@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const SLIDE_DURATION_MS = 15_000;
+const SLIDE_DURATION_MS = 5_000;
 
 const HERO_SLIDES = [
   {
