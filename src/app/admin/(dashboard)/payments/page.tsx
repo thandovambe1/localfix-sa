@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import PayoutActions from "@/components/payout-actions";
+import YocoGatewayStatus from "@/components/yoco-gateway-status";
 import { PaymentStatusBadge } from "@/components/payment-section";
 import { Stat } from "@/components/ui";
 import { getPaymentStats, getPaymentsDetailed } from "@/lib/queries";
@@ -65,6 +66,8 @@ export default async function AdminPaymentsPage({
           hint={`${stats?.paidPayments ?? 0} cleared payments`}
         />
       </section>
+
+      <YocoGatewayStatus />
 
       <nav className="flex flex-wrap gap-2" aria-label="Filter payouts">
         {FILTERS.map((f) => {
