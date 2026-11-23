@@ -34,7 +34,12 @@ export default function SiteHeader() {
       }`}
     >
       <div className="container-page flex h-16 items-center justify-between gap-4 md:h-[72px]">
-        <BrandLogo size="md" showTagline={true} />
+        <span className="relative inline-flex">
+          <BrandLogo size="md" showTagline={true} />
+          <span aria-hidden className="pointer-events-none absolute -right-4 -top-2 rotate-12 text-xl drop-shadow">
+            🎅
+          </span>
+        </span>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV.map((item) => (
@@ -87,6 +92,10 @@ export default function SiteHeader() {
           <AccountMenu mobile />
         </div>
       ) : null}
+      <div
+        aria-hidden
+        className="h-1.5 w-full bg-[linear-gradient(90deg,#dc2626_0%,#dc2626_18%,#fbbf24_18%,#fbbf24_36%,#15803d_36%,#15803d_54%,#fbbf24_54%,#fbbf24_72%,#dc2626_72%,#dc2626_90%,#15803d_90%)]"
+      />
     </header>
   );
 }
