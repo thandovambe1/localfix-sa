@@ -67,8 +67,11 @@ function renderSocialIcon(key: string) {
 export default function SiteFooter() {
   return (
     <footer className="relative mt-20 overflow-hidden bg-[#0d1b30] text-slate-300 print:hidden">
-      {/* Top accent rule */}
-      <div className="h-1 w-full bg-gradient-to-r from-navy-600 via-[#0f9c96] to-navy-600" aria-hidden />
+      {/* Top accent rule — festive edition */}
+      <div
+        className="h-1.5 w-full bg-[linear-gradient(90deg,#dc2626_0%,#dc2626_25%,#fbbf24_25%,#fbbf24_50%,#15803d_50%,#15803d_75%,#dc2626_75%)]"
+        aria-hidden
+      />
 
       {/* Subtle ambient light */}
       <div
@@ -90,7 +93,20 @@ export default function SiteFooter() {
             professionals nearby, and compare transparent quotes in minutes.
           </p>
           <NewsletterForm dark />
-          <div className="mt-6 flex gap-2.5">
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-center">
+            <p className="text-sm font-bold leading-relaxed text-slate-200">
+              LocalFix SA{" "}
+              <span className="inline-flex align-middle" aria-hidden>
+                <svg viewBox="0 0 24 24" fill="currentColor" className="inline-block h-[22px] w-[22px] animate-pulse3d" style={{ color: "#7c3aed" }}>
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+              </span>{" "}
+              Stands against GBV and<br />
+              violence against women and children.
+            </p>
+          </div>
+
+          <div className="mt-5 flex gap-2.5">
             {SOCIALS.map((s) => (
               <a
                 key={s.label}
@@ -131,31 +147,9 @@ export default function SiteFooter() {
       </div>
 
       <div className="relative border-t border-white/10">
-        <div className="container-page border-b border-white/[0.06] py-4">
-          <p className="flex items-center gap-2 text-sm font-bold text-slate-200">
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className="gbv-heart gbv-heart--lg shrink-0"
-            >
-              <defs>
-                <linearGradient id="footer-gbv-heart-gradient" x1="4" y1="5" x2="21" y2="20" gradientUnits="userSpaceOnUse">
-                  <stop offset="0" stopColor="#c4b5fd" />
-                  <stop offset="0.55" stopColor="#8b5cf6" />
-                  <stop offset="1" stopColor="#6d28d9" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M12 20.35a1.15 1.15 0 0 1-.52-.13C7.06 17.79 3.75 14.55 3.75 10.5 3.75 7.93 5.68 6 8.1 6c1.5 0 2.92.74 3.9 1.94C12.98 6.74 14.4 6 15.9 6c2.42 0 4.35 1.93 4.35 4.5 0 4.05-3.31 7.29-7.73 9.72a1.15 1.15 0 0 1-.52.13Z"
-                fill="url(#footer-gbv-heart-gradient)"
-                stroke="rgba(255,255,255,0.35)"
-                strokeWidth="0.5"
-                strokeLinejoin="round"
-              />
-            </svg>
-            LocalFix SA Stands against GBV and violence against women and children
-          </p>
-        </div>
+        <p className="container-page pt-5 text-center text-sm font-bold text-slate-200">
+          🎄 Merry Christmas &amp; Happy Holidays from the LocalFix SA team 🎄
+        </p>
         <div className="container-page flex flex-col gap-3 py-7 text-[13px] font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} LocalFix SA (Pty) Ltd. All rights reserved. Proudly South African 🇿🇦</p>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -168,7 +162,7 @@ export default function SiteFooter() {
               POPIA compliant
             </span>
             <span className="flex items-center gap-1.5 font-bold text-slate-200">
-              ☎️ 081 055 4566
+              ☎️ 0800 LOCALFIX
             </span>
           </p>
         </div>
