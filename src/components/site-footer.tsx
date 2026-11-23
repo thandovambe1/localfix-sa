@@ -67,11 +67,8 @@ function renderSocialIcon(key: string) {
 export default function SiteFooter() {
   return (
     <footer className="relative mt-20 overflow-hidden bg-[#0d1b30] text-slate-300 print:hidden">
-      {/* Top accent rule — festive edition */}
-      <div
-        className="h-1.5 w-full bg-[linear-gradient(90deg,#dc2626_0%,#dc2626_25%,#fbbf24_25%,#fbbf24_50%,#15803d_50%,#15803d_75%,#dc2626_75%)]"
-        aria-hidden
-      />
+      {/* Seasonal Christmas garland accent */}
+      <div className="christmas-garland w-full" aria-hidden="true" />
 
       {/* Subtle ambient light */}
       <div
@@ -147,9 +144,6 @@ export default function SiteFooter() {
       </div>
 
       <div className="relative border-t border-white/10">
-        <p className="container-page pt-5 text-center text-sm font-bold text-slate-200">
-          🎄 Merry Christmas &amp; Happy Holidays from the LocalFix SA team 🎄
-        </p>
         <div className="container-page flex flex-col gap-3 py-7 text-[13px] font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} LocalFix SA (Pty) Ltd. All rights reserved. Proudly South African 🇿🇦</p>
           <p className="flex flex-wrap items-center gap-x-4 gap-y-2">
