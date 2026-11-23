@@ -3,31 +3,35 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const SLIDE_DURATION_MS = 12_000;
+const SLIDE_DURATION_MS = 15_000;
 
 const HERO_SLIDES = [
   {
-    src: "/images/localfix-hero.png",
+    src: "/images/hero-christmas.jpg",
+    alt: "LocalFix SA professional in a Santa hat outside a South African home decorated with Christmas lights",
+  },
+  {
+    src: "/images/hero.jpg",
     alt: "Verified LocalFix SA professional ready to help at a modern South African home",
   },
   {
-    src: "/images/localfix-hero-3.png",
+    src: "/images/hero-2.jpg",
     alt: "South African home service professionals collaborating in a bright modern kitchen",
   },
   {
-    src: "/images/localfix-hero-2.png",
+    src: "/images/provider-hero.jpg",
     alt: "LocalFix SA service provider reviewing a job at a modern South African home",
   },
   {
-    src: "/images/localfix-hero-5.png",
+    src: "/images/hero-3.jpg",
     alt: "Professional South African electrician checking a modern home's electrical installation",
   },
   {
-    src: "/images/localfix-hero-6.png",
+    src: "/images/hero-4.jpg",
     alt: "Homeowner and LocalFix SA professional reviewing completed home maintenance work",
   },
   {
-    src: "/images/localfix-hero-4.png",
+    src: "/images/hero-5.jpg",
     alt: "South African technician inspecting solar panels at a modern suburban home",
   },
 ] as const;
@@ -44,11 +48,9 @@ export default function HeroSlideshow() {
 
   useEffect(() => {
     if (paused) return;
-
     const timer = window.setInterval(() => {
       setActiveIndex((index) => (index + 1) % HERO_SLIDES.length);
     }, SLIDE_DURATION_MS);
-
     return () => window.clearInterval(timer);
   }, [paused]);
 
@@ -92,7 +94,6 @@ export default function HeroSlideshow() {
             aria-current={index === activeIndex ? "true" : undefined}
           />
         ))}
-
         <button
           type="button"
           onClick={() => setPaused((value) => !value)}
