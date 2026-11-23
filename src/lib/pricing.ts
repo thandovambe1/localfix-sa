@@ -7,8 +7,8 @@
  *   Premium  = R495 / month
  *
  * Pro Onboarding Special:
- *   Qualifying NEW providers who onboard on Pro pay R0 until 30 November 2026.
- *   Normal Pro pricing (R195/month) resumes automatically on 1 December 2026.
+ *   Qualifying NEW providers who onboard on Pro pay R0 until 01 April 2027.
+ *   Normal Pro pricing (R195/month) resumes automatically on 02 April 2027.
  *
  * All amounts are stored in ZAR cents to match the existing payments ledger.
  * Every price used for money decisions MUST be resolved on the server through
@@ -33,19 +33,19 @@ export const PRO_ONBOARDING_PROMO_CODE = "PRO_ONBOARDING_2026";
 /**
  * Promotion window boundary.
  *
- * The special runs until the end of 30 November 2026 in South Africa
+ * The special runs until the end of 01 April 2027 in South Africa
  * (Africa/Johannesburg = UTC+2, no daylight saving). Normal Pro pricing
- * therefore begins at 2026-12-01T00:00:00+02:00, which is
- * 2026-11-30T22:00:00Z in UTC.
+ * therefore begins at 2027-04-02T00:00:00+02:00, which is
+ * 2027-04-01T22:00:00Z in UTC.
  *
  * Storing the boundary as an absolute UTC instant avoids the classic bug
  * where a UTC-based comparison ends the promotion two hours early in SA.
  */
-export const PROMO_ENDS_AT = new Date("2026-11-30T22:00:00.000Z");
+export const PROMO_ENDS_AT = new Date("2027-04-01T22:00:00.000Z");
 
 /** Human-readable dates used consistently across UI and emails. */
-export const PROMO_END_LABEL = "30 November 2026";
-export const NORMAL_PRICING_START_LABEL = "1 December 2026";
+export const PROMO_END_LABEL = "01 April 2027";
+export const NORMAL_PRICING_START_LABEL = "02 April 2027";
 
 /** True while the Pro onboarding special is running (SA-time aware). */
 export function isProOnboardingPromoActive(now: Date = new Date()): boolean {
