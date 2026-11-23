@@ -19,6 +19,10 @@ const HERO_SLIDES = [
     alt: "South African home service professionals collaborating in a bright modern kitchen",
   },
   {
+    src: "/images/localfix-hero-6.png",
+    alt: "South African technician inspecting solar panels at a modern suburban home",
+  },
+  {
     src: "/images/localfix-provider-hero.png",
     alt: "LocalFix SA service provider reviewing a job at a modern South African home",
   },
