@@ -11,7 +11,7 @@ const HERO_SLIDES = [
     alt: "LocalFix SA professional in a Santa hat outside a South African home decorated with Christmas lights",
   },
   {
-    src: "/images/hero.png",
+    src: "/images/localfix-hero.png",
     alt: "Verified LocalFix SA professional ready to help at a modern South African home",
   },
   {
