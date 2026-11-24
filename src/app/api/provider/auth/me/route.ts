@@ -21,6 +21,11 @@ export async function GET() {
       email: provider.email,
       status: provider.status,
       plan: provider.plan,
+      walletCents: provider.walletCents,
+    },
+    wallet: {
+      ownerType: "provider" as const,
+      balanceCents: provider.walletCents,
     },
   });
 }
