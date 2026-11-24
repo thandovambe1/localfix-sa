@@ -10,6 +10,7 @@ const TABS = [
   { href: "/admin", label: "Overview", icon: "📊" },
   { href: "/admin/requests", label: "Job Requests", icon: "🧰" },
   { href: "/admin/payments", label: "Payments & Payouts", icon: "💰" },
+  { href: "/admin/wallets", label: "Wallets", icon: "👛" },
   { href: "/admin/withdrawals", label: "Withdrawals", icon: "💸" },
   { href: "/admin/customers", label: "Customers", icon: "👥" },
   { href: "/admin/providers", label: "Providers", icon: "✅" },
