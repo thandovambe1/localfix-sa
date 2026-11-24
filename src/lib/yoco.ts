@@ -4,22 +4,25 @@
  * Uses the Yoco Checkout API to create hosted payment sessions.
  * Supports all payment methods including Apple Pay, Google Pay and cards.
  *
- * Environment variables:
- *   YOCO_SECRET_KEY — Your Yoco secret API key (sk_live_... or sk_test_...)
+ * Environment variables (set in Vercel → Settings → Environment Variables,
+ * never hardcoded in source):
+ *   YOCO_SECRET_KEY — Yoco live secret key (server-only, sk_live_...)
+ *   NEXT_PUBLIC_YOCO_PUBLIC_KEY — Yoco live public key (publishable, pk_live_...)
  *   YOCO_WEBHOOK_SECRET — Optional webhook signing secret
  *   NEXT_PUBLIC_BASE_URL — Your public site URL for redirects
  */
 
-import { getPublicBaseUrl, getYocoSecretKey } from "@/lib/yoco-config";
-
 const YOCO_API = "https://payments.yoco.com/api/checkouts";
 
 function getSecretKey(): string {
-  return getYocoSecretKey();
+  return process.env.YOCO_SECRET_KEY ?? "";
 }
 
 function getBaseUrl(): string {
-  return getPublicBaseUrl();
+  return (
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  );
 }
 
 export type YocoCheckoutRequest = {
@@ -30,6 +33,14 @@ export type YocoCheckoutRequest = {
   providerId: number;
   commissionCents: number;
   providerPayoutCents: number;
+};
+
+export type WalletCheckoutRequest = {
+  amountCents: number;
+  reference: string;
+  ownerType: "customer" | "provider";
+  ownerId: number;
+  displayName: string;
 };
 
 export type YocoCheckoutResponse = {
@@ -129,11 +140,7 @@ export async function createYocoCheckout(
 /**
  * Create a Yoco checkout session for wallet top-up.
  */
-export async function createWalletTopupCheckout(req: {
-  amountCents: number;
-  reference: string;
-  customerId: number;
-}): Promise<{ success: true; checkout: YocoCheckoutResponse } | { success: false; error: string }> {
+export async function createWalletTopupCheckout(req: WalletCheckoutRequest & { customerId?: number }): Promise<{ success: true; checkout: YocoCheckoutResponse } | { success: false; error: string }> {
   const secretKey = getSecretKey();
   const baseUrl = getBaseUrl();
 
@@ -142,8 +149,9 @@ export async function createWalletTopupCheckout(req: {
     return { success: false, error: "Top-ups are temporarily unavailable. Please try again later." };
   }
 
-  const successUrl = `${baseUrl}/dashboard/customer?topup=success&reference=${req.reference}`;
-  const cancelUrl = `${baseUrl}/dashboard/customer?topup=cancelled`;
+  const dashboardPath = req.ownerType === "provider" ? "/dashboard/provider" : "/dashboard/customer";
+  const successUrl = `${baseUrl}${dashboardPath}?topup=success&reference=${req.reference}`;
+  const cancelUrl = `${baseUrl}${dashboardPath}?topup=cancelled&reference=${req.reference}`;
 
   try {
     const response = await fetch(YOCO_API, {
@@ -154,16 +162,17 @@ export async function createWalletTopupCheckout(req: {
         currency: "ZAR",
         successUrl,
         cancelUrl,
-        failureUrl: `${baseUrl}/dashboard/customer?topup=failed&reference=${req.reference}`,
+        failureUrl: `${baseUrl}${dashboardPath}?topup=failed&reference=${req.reference}`,
         clientReferenceId: req.reference,
         metadata: {
           localfix_reference: req.reference,
-          customer_id: String(req.customerId),
+          owner_type: req.ownerType,
+          owner_id: String(req.ownerId),
           kind: "wallet_topup",
         },
         lineItems: [
           {
-            displayName: `LocalFix wallet top-up (${req.reference})`,
+            displayName: req.displayName,
             quantity: 1,
             pricingDetails: { price: req.amountCents },
           },
@@ -181,6 +190,25 @@ export async function createWalletTopupCheckout(req: {
   } catch (err) {
     console.error("[Yoco] Network error:", err);
     return { success: false, error: "Failed to connect to Yoco payment gateway." };
+  }
+}
+
+/**
+ * Read back a Yoco checkout from the server. This is used for operational
+ * verification/diagnostics; wallet credits still wait for the signed webhook.
+ */
+export async function getYocoCheckout(checkoutId: string) {
+  const secretKey = getSecretKey();
+  if (!secretKey) return null;
+  try {
+    const response = await fetch(`${YOCO_API}/${encodeURIComponent(checkoutId)}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as YocoCheckoutResponse;
+  } catch (error) {
+    console.error("[Yoco] Checkout read-back failed", error);
+    return null;
   }
 }
 
