@@ -4,6 +4,7 @@ import { QuoteForm } from "@/components/job-client";
 import { PaymentStatusBadge } from "@/components/payment-section";
 import ProviderSignOut from "@/components/provider-sign-out";
 import RequestPayout from "@/components/request-payout";
+import WalletPanel from "@/components/wallet-panel";
 import { Stat, StatusPill, VerificationBadge, Stars } from "@/components/ui";
 import { getProvider, getProviderPipeline, getProviderReviews, getPaymentsByProvider } from "@/lib/queries";
 import { getProviderSession } from "@/lib/auth";
@@ -265,6 +266,8 @@ export default async function ProviderDashboard() {
         </div>
 
         <aside className="space-y-5">
+          <WalletPanel initialBalanceCents={provider.walletCents} accountLabel="Service provider" />
+
           <div className="card p-5">
             <h3 className="text-sm font-bold text-navy-800">Calendar</h3>
             <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px]">
