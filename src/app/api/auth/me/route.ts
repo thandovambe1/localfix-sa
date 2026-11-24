@@ -32,6 +32,10 @@ export async function GET() {
       walletCents: customer.walletCents,
       inboxUnread: unreadRows.length,
     },
+    wallet: {
+      ownerType: "customer" as const,
+      balanceCents: customer.walletCents,
+    },
   });
 }
 
