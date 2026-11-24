@@ -1,26 +1,214 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { jobs, payments, walletTransactions } from "@/db/schema";
+import {
+  customers,
+  inboxMessages,
+  jobs,
+  payments,
+  providers,
+  providerWalletTransactions,
+  walletTransactions,
+  webhookEvents,
+} from "@/db/schema";
 import { verifyWebhookSignature } from "@/lib/yoco";
-import { applyWalletMovement } from "@/lib/wallet";
+import { applyCustomerWalletMovement, applyProviderWalletMovement } from "@/lib/wallet";
 import { ready } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-/**
- * POST /api/payments/webhook
- *
- * Yoco webhook endpoint. Receives payment.succeeded events.
- * On success: marks payment as paid, updates job to "in_progress",
- * and queues provider payout.
- */
+type YocoEvent = {
+  id?: string;
+  type?: string;
+  payload?: {
+    id?: string;
+    status?: string;
+    amount?: number;
+    currency?: string;
+    metadata?: Record<string, unknown> & { checkoutId?: string };
+  };
+};
+
+function metadata(event: YocoEvent) {
+  return event.payload?.metadata ?? {};
+}
+
+async function rememberEvent(
+  event: YocoEvent,
+  checkoutId: string | null,
+  status = "processed",
+): Promise<{ duplicate: boolean }> {
+  const eventId = String(event.id ?? "").trim();
+  if (!eventId) {
+    console.warn("[Webhook] Event has no id; processing without event deduplication");
+    return { duplicate: false };
+  }
+  try {
+    const inserted = await db
+      .insert(webhookEvents)
+      .values({
+        provider: "yoco",
+        eventId,
+        eventType: String(event.type ?? "unknown"),
+        checkoutId,
+        paymentId: event.payload?.id ?? null,
+        status,
+      })
+      .onConflictDoNothing()
+      .returning({ id: webhookEvents.id });
+    return { duplicate: inserted.length === 0 };
+  } catch (error) {
+    console.error("[Webhook] Event ledger insert failed", error);
+    return { duplicate: false };
+  }
+}
+
+async function completeWalletDeposit(event: YocoEvent, checkoutId: string) {
+  const meta = metadata(event);
+  const ownerType = String(meta.owner_type ?? (meta.kind === "wallet_topup" ? "customer" : ""));
+  const ownerId = Number(meta.owner_id ?? meta.customer_id ?? 0);
+  const reference = String(meta.localfix_reference ?? "");
+  const expectedAmount = Number(event.payload?.amount ?? 0);
+
+  if (!["customer", "provider"].includes(ownerType) || !ownerId || !reference || !expectedAmount) {
+    console.error("[Webhook] Wallet deposit metadata is incomplete", { checkoutId, ownerType, ownerId, reference, expectedAmount });
+    return Response.json({ error: "Wallet deposit metadata incomplete" }, { status: 400 });
+  }
+  if (event.payload?.currency && event.payload.currency !== "ZAR") {
+    console.error("[Webhook] Wallet deposit currency rejected", { checkoutId, currency: event.payload.currency });
+    return Response.json({ error: "Unsupported payment currency" }, { status: 400 });
+  }
+
+  if (ownerType === "customer") {
+    const [pending] = await db
+      .select()
+      .from(walletTransactions)
+      .where(eq(walletTransactions.yocoCheckoutId, checkoutId))
+      .limit(1);
+    if (pending?.status === "completed") return Response.json({ received: true, already_processed: true });
+    if (pending && (pending.customerId !== ownerId || pending.amountCents !== expectedAmount || pending.reference !== reference)) {
+      console.error("[Webhook] Customer deposit validation failed", { checkoutId, reference });
+      return Response.json({ error: "Deposit validation failed" }, { status: 400 });
+    }
+
+    const result = pending
+      ? await db.transaction(async (tx) => {
+          const [customer] = await tx
+            .select()
+            .from(customers)
+            .where(eq(customers.id, ownerId))
+            .for("update")
+            .limit(1);
+          if (!customer) throw new Error("Customer account not found");
+          const [claimed] = await tx
+            .update(walletTransactions)
+            .set({ status: "completed" })
+            .where(and(eq(walletTransactions.id, pending.id), eq(walletTransactions.status, "pending")))
+            .returning({ id: walletTransactions.id });
+          if (!claimed) return { balanceCents: customer.walletCents, alreadyProcessed: true };
+          const balanceCents = customer.walletCents + expectedAmount;
+          await tx
+            .update(customers)
+            .set({ walletCents: balanceCents })
+            .where(eq(customers.id, ownerId));
+          await tx
+            .update(walletTransactions)
+            .set({ balanceAfterCents: balanceCents })
+            .where(eq(walletTransactions.id, pending.id));
+          return { balanceCents, alreadyProcessed: false };
+        })
+      : await applyCustomerWalletMovement({
+          customerId: ownerId,
+          amountCents: expectedAmount,
+          type: "topup",
+          description: "Wallet deposit confirmed by Yoco",
+          reference,
+          yocoCheckoutId: checkoutId,
+        });
+
+    return Response.json({
+      received: true,
+      wallet_topup: true,
+      balanceCents: result.balanceCents,
+      already_processed: "alreadyProcessed" in result ? result.alreadyProcessed : false,
+    });
+  }
+
+  const [pending] = await db
+    .select()
+    .from(providerWalletTransactions)
+    .where(eq(providerWalletTransactions.yocoCheckoutId, checkoutId))
+    .limit(1);
+  if (pending?.status === "completed") return Response.json({ received: true, already_processed: true });
+  if (pending && (pending.providerId !== ownerId || pending.amountCents !== expectedAmount || pending.reference !== reference)) {
+    console.error("[Webhook] Provider deposit validation failed", { checkoutId, reference });
+    return Response.json({ error: "Deposit validation failed" }, { status: 400 });
+  }
+
+  const result = pending
+    ? await db.transaction(async (tx) => {
+        const [provider] = await tx
+          .select()
+          .from(providers)
+          .where(eq(providers.id, ownerId))
+          .for("update")
+          .limit(1);
+        if (!provider) throw new Error("Provider account not found");
+        const [claimed] = await tx
+          .update(providerWalletTransactions)
+          .set({ status: "completed", yocoPaymentId: event.payload?.id ?? null })
+          .where(and(eq(providerWalletTransactions.id, pending.id), eq(providerWalletTransactions.status, "pending")))
+          .returning({ id: providerWalletTransactions.id });
+        if (!claimed) return { balanceCents: provider.walletCents, alreadyProcessed: true };
+        const balanceCents = provider.walletCents + expectedAmount;
+        await tx
+          .update(providers)
+          .set({ walletCents: balanceCents })
+          .where(eq(providers.id, ownerId));
+        await tx
+          .update(providerWalletTransactions)
+          .set({ balanceAfterCents: balanceCents })
+          .where(eq(providerWalletTransactions.id, pending.id));
+        return { balanceCents, alreadyProcessed: false };
+      })
+    : await applyProviderWalletMovement({
+        providerId: ownerId,
+        amountCents: expectedAmount,
+        type: "topup",
+        description: "Provider wallet deposit confirmed by Yoco",
+        reference,
+        yocoCheckoutId: checkoutId,
+        yocoPaymentId: event.payload?.id ?? null,
+      });
+
+  return Response.json({
+    received: true,
+    wallet_topup: true,
+    balanceCents: result.balanceCents,
+    already_processed: "alreadyProcessed" in result ? result.alreadyProcessed : false,
+    ownerType,
+  });
+}
+
+async function failOrCancelWalletDeposit(event: YocoEvent, checkoutId: string) {
+  const meta = metadata(event);
+  const ownerType = String(meta.owner_type ?? "");
+  if (ownerType === "provider") {
+    await db
+      .update(providerWalletTransactions)
+      .set({ status: event.type?.includes("expired") ? "cancelled" : "failed" })
+      .where(and(eq(providerWalletTransactions.yocoCheckoutId, checkoutId), eq(providerWalletTransactions.status, "pending")));
+  } else {
+    await db
+      .update(walletTransactions)
+      .set({ status: event.type?.includes("expired") ? "cancelled" : "failed" })
+      .where(and(eq(walletTransactions.yocoCheckoutId, checkoutId), eq(walletTransactions.status, "pending")));
+  }
+}
+
 export async function POST(request: Request) {
   await ready();
-
   const rawBody = await request.text();
 
-  // Verify webhook signature using Yoco's Standard Webhooks scheme
-  // (webhook-id, webhook-timestamp, webhook-signature headers).
   if (
     !verifyWebhookSignature(rawBody, {
       id: request.headers.get("webhook-id"),
@@ -28,136 +216,81 @@ export async function POST(request: Request) {
       signature: request.headers.get("webhook-signature"),
     })
   ) {
-    console.error("[Webhook] Invalid signature");
+    console.error("[Webhook] Invalid Yoco signature rejected");
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  let event: {
-    id?: string;
-    type?: string;
-    payload?: {
-      id?: string;
-      status?: string;
-      amount?: number;
-      metadata?: Record<string, string>;
-    };
-  };
-
+  let event: YocoEvent;
   try {
-    event = JSON.parse(rawBody);
+    event = JSON.parse(rawBody) as YocoEvent;
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Only process payment.succeeded events
-  if (event.type !== "payment.succeeded") {
-    console.log(`[Webhook] Ignoring event type: ${event.type}`);
-    return Response.json({ received: true, ignored: true });
-  }
+  const checkoutId = String(event.payload?.metadata?.checkoutId ?? "").trim();
 
-  const checkoutId = event.payload?.metadata?.checkoutId;
-  const yocoPaymentId = event.payload?.id;
+  try {
+    const remembered = await rememberEvent(event, checkoutId || null);
+    if (remembered.duplicate) {
+      return Response.json({ received: true, already_processed: true, duplicate_event: true });
+    }
 
-  if (!checkoutId) {
-    console.error("[Webhook] No checkoutId in metadata");
-    return Response.json({ error: "Missing checkoutId" }, { status: 400 });
-  }
+    if (event.type === "payment.failed" || event.type === "payment.cancelled" || event.type === "payment.expired") {
+      if (checkoutId) await failOrCancelWalletDeposit(event, checkoutId);
+      return Response.json({ received: true, payment_not_credited: true });
+    }
 
-  // A checkout is either a job payment or a wallet top-up.
-  const [pendingTopup] = await db
-    .select()
-    .from(walletTransactions)
-    .where(eq(walletTransactions.yocoCheckoutId, checkoutId))
-    .limit(1);
+    if (event.type !== "payment.succeeded") return Response.json({ received: true, ignored: true });
+    if (!checkoutId) return Response.json({ error: "Missing checkoutId" }, { status: 400 });
 
-  const metaKind = String((event.payload as { metadata?: Record<string, unknown> })?.metadata?.kind ?? "");
-  const isWalletTopup = Boolean(pendingTopup) || metaKind === "wallet_topup";
+    const metaKind = String(metadata(event).kind ?? "");
+    const metaOwner = String(metadata(event).owner_type ?? "");
+    if (metaKind === "wallet_topup" || metaOwner) {
+      return completeWalletDeposit(event, checkoutId);
+    }
 
-  if (isWalletTopup) {
-    if (pendingTopup?.status === "completed") {
+    // Existing LocalFix job-payment flow.
+    const [payment] = await db.select().from(payments).where(eq(payments.yocoCheckoutId, checkoutId)).limit(1);
+    if (!payment) return Response.json({ error: "Payment not found" }, { status: 404 });
+    if (payment.status === "paid" || payment.status === "paid_out") {
       return Response.json({ received: true, already_processed: true });
     }
-
-    const payload = event.payload as { amount?: number; metadata?: Record<string, unknown> };
-    const amountCents = pendingTopup?.amountCents ?? Number(payload.amount ?? 0);
-    const customerId = Number(
-      pendingTopup?.customerId ?? String(payload.metadata?.customer_id ?? ""),
-    );
-    const reference = String(payload.metadata?.localfix_reference ?? pendingTopup?.reference ?? `WLT-${Date.now()}`);
-
-    if (!customerId || !amountCents) {
-      console.error("[Webhook] Wallet top-up webhook missing customer/amount", checkoutId);
-      return Response.json({ error: "Wallet top-up webhook missing data" }, { status: 400 });
+    if (event.payload?.currency && event.payload.currency !== "ZAR") {
+      return Response.json({ error: "Unsupported payment currency" }, { status: 400 });
+    }
+    if (event.payload?.amount && event.payload.amount !== payment.totalAmountCents) {
+      console.error("[Webhook] Job payment amount mismatch", { checkoutId, expected: payment.totalAmountCents, received: event.payload.amount });
+      return Response.json({ error: "Payment amount mismatch" }, { status: 400 });
     }
 
-    // Credit the wallet (or reconcile a lost pending ledger row).
-    const movement = await applyWalletMovement({
-      customerId,
-      amountCents,
-      type: "topup",
-      description: "Wallet top-up via Yoco",
-      reference,
-      yocoCheckoutId: checkoutId,
-    });
+    await db
+      .update(payments)
+      .set({
+        status: "paid",
+        yocoPaymentId: event.payload?.id ?? null,
+        paidAt: new Date(),
+        payoutStatus: "payout_pending",
+        meta: {
+          ...((payment.meta ?? {}) as Record<string, unknown>),
+          webhook_event_id: event.id,
+          webhook_event_type: event.type,
+          payment_amount: event.payload?.amount,
+        },
+      })
+      .where(eq(payments.id, payment.id));
+    await db.update(jobs).set({ status: "in_progress" }).where(eq(jobs.id, payment.jobId));
+    await db.insert(inboxMessages).values({
+      customerId: null,
+      customerEmail: "",
+      type: "payment",
+      title: `Payment confirmed (${payment.reference})`,
+      body: "Your payment was confirmed and the provider can now begin work.",
+      jobId: payment.jobId,
+    }).catch(() => undefined);
 
-    // Retire the pending placeholder if it existed.
-    if (pendingTopup) {
-      await db.delete(walletTransactions).where(eq(walletTransactions.id, pendingTopup.id));
-    }
-
-    console.log(
-      `[Webhook] Wallet top-up ${reference} credited ` +
-        `R${(amountCents / 100).toFixed(2)} — new balance R${(movement.balanceCents / 100).toFixed(2)}`,
-    );
-    return Response.json({ received: true, wallet_topup: true, balanceCents: movement.balanceCents });
+    return Response.json({ received: true, payment_id: payment.id });
+  } catch (error) {
+    console.error("[Webhook] Processing failed", error);
+    return Response.json({ error: "Webhook processing failed" }, { status: 500 });
   }
-
-  // Find the payment record by Yoco checkout ID
-  const [payment] = await db
-    .select()
-    .from(payments)
-    .where(eq(payments.yocoCheckoutId, checkoutId))
-    .limit(1);
-
-  if (!payment) {
-    console.error(`[Webhook] No payment found for checkout ${checkoutId}`);
-    return Response.json({ error: "Payment not found" }, { status: 404 });
-  }
-
-  // Idempotency: skip if already processed
-  if (payment.status === "paid" || payment.status === "paid_out") {
-    return Response.json({ received: true, already_processed: true });
-  }
-
-  // Mark payment as paid
-  await db
-    .update(payments)
-    .set({
-      status: "paid",
-      yocoPaymentId: yocoPaymentId ?? null,
-      paidAt: new Date(),
-      payoutStatus: "payout_pending",
-      meta: {
-        ...((payment.meta ?? {}) as Record<string, unknown>),
-        webhook_event_id: event.id,
-        webhook_event_type: event.type,
-        payment_amount: event.payload?.amount,
-      },
-    })
-    .where(eq(payments.id, payment.id));
-
-  // Update job status to in_progress (provider can now begin work)
-  await db
-    .update(jobs)
-    .set({ status: "in_progress" })
-    .where(eq(jobs.id, payment.jobId));
-
-  console.log(
-    `[Webhook] Payment ${payment.reference} marked as paid. ` +
-      `Total: R${(payment.totalAmountCents / 100).toFixed(2)}, ` +
-      `Commission: R${(payment.commissionCents / 100).toFixed(2)}, ` +
-      `Provider payout: R${(payment.providerPayoutCents / 100).toFixed(2)}`,
-  );
-
-  return Response.json({ received: true, payment_id: payment.id });
 }
