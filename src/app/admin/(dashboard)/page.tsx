@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { EmailLog } from "@/components/email-log";
 import { PaymentStatusBadge } from "@/components/payment-section";
 import { Stat, StatusPill } from "@/components/ui";
 import {
@@ -208,6 +209,15 @@ export default async function AdminOverviewPage() {
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* EMAIL DELIVERY LOG */}
+        <section className="card p-6">
+          <h2 className="text-lg font-bold text-navy-800">Email delivery log</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            All customer, provider and admin emails are queued here and retried automatically.
+          </p>
+          <EmailLog />
         </section>
       </div>
 
