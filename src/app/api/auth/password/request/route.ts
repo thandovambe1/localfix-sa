@@ -73,6 +73,8 @@ export async function POST(request: Request) {
 
   const label = accountType === "provider" ? "service provider" : "customer";
   const mail = await sendMail({
+    category: "password",
+    reference: `reset:${accountType}:${account.id}`,
     to: account.email,
     subject: `LocalFix SA ${label} password reset code`,
     text: `Hi ${account.name},\n\nYour LocalFix SA password reset code is ${code}. It expires in 15 minutes. If you did not request this, ignore this email.\n\nLocalFix SA`,
