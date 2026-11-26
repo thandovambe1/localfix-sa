@@ -63,7 +63,6 @@ alter table providers add column if not exists application_decided_at timestampt
 alter table providers add column if not exists subscription_price_cents integer;
 alter table providers add column if not exists promo_code text;
 alter table providers add column if not exists promo_ends_at timestamptz;
-alter table providers add column if not exists wallet_cents integer not null default 0;
 create unique index if not exists providers_email_idx on providers (lower(email));
 
 create table if not exists provider_documents (
@@ -356,55 +355,23 @@ alter table wallet_transactions add column if not exists status text not null de
 alter table wallet_transactions add column if not exists job_id integer;
 alter table wallet_transactions add column if not exists yoco_checkout_id text;
 
-create table if not exists provider_wallet_transactions (
+create table if not exists email_outbox (
   id serial primary key,
-  provider_id integer not null,
-  type text not null,
-  amount_cents integer not null,
-  balance_after_cents integer not null default 0,
-  description text not null default '',
-  reference text not null,
-  status text not null default 'completed',
-  job_id integer,
-  yoco_checkout_id text,
-  yoco_payment_id text,
+  to_email text not null,
+  subject text not null,
+  text_body text not null,
+  html_body text,
+  category text not null default 'general',
+  reference text not null default '',
+  status text not null default 'pending',
+  attempts integer not null default 0,
+  last_error text,
+  sent_at timestamptz,
+  next_retry_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
-create unique index if not exists provider_wallet_checkout_unique on provider_wallet_transactions (yoco_checkout_id) where yoco_checkout_id is not null;
-create unique index if not exists provider_wallet_payment_unique on provider_wallet_transactions (yoco_payment_id) where yoco_payment_id is not null;
-create unique index if not exists provider_wallet_reference_unique on provider_wallet_transactions (reference);
-create index if not exists provider_wallet_provider_idx on provider_wallet_transactions (provider_id);
-create table if not exists provider_withdrawals (
-  id serial primary key,
-  provider_id integer not null,
-  amount_cents integer not null,
-  reference text not null,
-  bank_name text not null,
-  account_holder text not null,
-  account_number text not null,
-  branch_code text not null default '',
-  account_type text not null default 'cheque',
-  status text not null default 'requested',
-  payout_reference text,
-  processed_by text,
-  admin_notes text not null default '',
-  processed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-create unique index if not exists provider_withdrawals_reference_unique on provider_withdrawals (reference);
-create index if not exists provider_withdrawals_provider_idx on provider_withdrawals (provider_id);
-
-create table if not exists webhook_events (
-  id serial primary key,
-  provider text not null default 'yoco',
-  event_id text not null,
-  event_type text not null,
-  checkout_id text,
-  payment_id text,
-  status text not null default 'processed',
-  created_at timestamptz not null default now()
-);
-create unique index if not exists webhook_events_event_unique on webhook_events (provider, event_id);
+create index if not exists email_outbox_status_idx on email_outbox (status);
+create index if not exists email_outbox_reference_idx on email_outbox (reference);
 
 create table if not exists inbox_messages (
   id serial primary key,
