@@ -46,8 +46,6 @@ export const providers = pgTable("providers", {
   accent: text("accent").notNull().default("#0F9E99"),
   /** Uploaded business logo (URL or small data-URI). */
   logoUrl: text("logo_url"),
-  /** Provider wallet balance in ZAR cents. */
-  walletCents: integer("wallet_cents").notNull().default(0),
   status: text("status").notNull().default("pending"),
   plan: text("plan").notNull().default("free"),
   /**
@@ -387,56 +385,6 @@ export const withdrawals = pgTable("withdrawals", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** Every movement of money in and out of a service-provider wallet. */
-export const providerWalletTransactions = pgTable("provider_wallet_transactions", {
-  id: serial("id").primaryKey(),
-  providerId: integer("provider_id").notNull(),
-  /** topup | payment_credit | refund | bonus | withdrawal */
-  type: text("type").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  balanceAfterCents: integer("balance_after_cents").notNull().default(0),
-  description: text("description").notNull().default(""),
-  reference: text("reference").notNull(),
-  /** pending | completed | failed | cancelled */
-  status: text("status").notNull().default("completed"),
-  jobId: integer("job_id"),
-  yocoCheckoutId: text("yoco_checkout_id"),
-  yocoPaymentId: text("yoco_payment_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-/** Service-provider withdrawal requests. */
-export const providerWithdrawals = pgTable("provider_withdrawals", {
-  id: serial("id").primaryKey(),
-  providerId: integer("provider_id").notNull(),
-  amountCents: integer("amount_cents").notNull(),
-  reference: text("reference").notNull(),
-  bankName: text("bank_name").notNull(),
-  accountHolder: text("account_holder").notNull(),
-  accountNumber: text("account_number").notNull(),
-  branchCode: text("branch_code").notNull().default(""),
-  accountType: text("account_type").notNull().default("cheque"),
-  /** requested | approved | processing | completed | rejected */
-  status: text("status").notNull().default("requested"),
-  payoutReference: text("payout_reference"),
-  processedBy: text("processed_by"),
-  adminNotes: text("admin_notes").notNull().default(""),
-  processedAt: timestamp("processed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-/** Processed Yoco webhook events used to guarantee exactly-once handling. */
-export const webhookEvents = pgTable("webhook_events", {
-  id: serial("id").primaryKey(),
-  provider: text("provider").notNull().default("yoco"),
-  eventId: text("event_id").notNull(),
-  eventType: text("event_type").notNull(),
-  checkoutId: text("checkout_id"),
-  paymentId: text("payment_id"),
-  status: text("status").notNull().default("processed"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 /** Customer inbox — quotes and system notices land here automatically. */
 export const inboxMessages = pgTable("inbox_messages", {
   id: serial("id").primaryKey(),
@@ -547,6 +495,34 @@ export const passwordResetCodes = pgTable("password_reset_codes", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Persistent email outbox. Every outbound LocalFix SA email is recorded
+ * here before delivery so nothing is silently lost and failures can be
+ * retried or inspected by Founder/Admin.
+ */
+export const emailOutbox = pgTable(
+  "email_outbox",
+  {
+    id: serial("id").primaryKey(),
+    toEmail: text("to_email").notNull(),
+    subject: text("subject").notNull(),
+    textBody: text("text_body").notNull(),
+    htmlBody: text("html_body"),
+    category: text("category").notNull().default("general"),
+    reference: text("reference").notNull().default(""),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("email_outbox_status_idx").on(table.status),
+    index("email_outbox_reference_idx").on(table.reference),
+  ],
+);
+
 export type Provider = typeof providers.$inferSelect;
 export type ProviderDocument = typeof providerDocuments.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
@@ -565,7 +541,6 @@ export type AdminPasswordCode = typeof adminPasswordCodes.$inferSelect;
 export type PasswordResetCode = typeof passwordResetCodes.$inferSelect;
 export type Customer = typeof customers.$inferSelect;
 export type WalletTransaction = typeof walletTransactions.$inferSelect;
-export type ProviderWalletTransaction = typeof providerWalletTransactions.$inferSelect;
-export type ProviderWithdrawal = typeof providerWithdrawals.$inferSelect;
 export type InboxMessage = typeof inboxMessages.$inferSelect;
 export type Withdrawal = typeof withdrawals.$inferSelect;
+export type EmailOutbox = typeof emailOutbox.$inferSelect;
