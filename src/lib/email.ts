@@ -1,53 +1,50 @@
+import { queueEmail, smtpConfigured } from "@/lib/mailer";
+
 type MailInput = {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  category?: "job" | "quote" | "provider_application" | "job_card" | "password" | "payment" | "admin" | "general";
+  reference?: string;
 };
 
-function smtpConfigured() {
-  return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
-}
-
 /**
- * Production mail sender.
+ * Backwards-compatible email entry point.
  *
- * Configure in Vercel:
- * SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
+ * Every email is now durably queued in the email_outbox table before an
+ * SMTP attempt is made. If SMTP is down or the network fails, the email
+ * remains pending and is retried with exponential backoff — it is never
+ * silently lost.
  */
-export async function sendMail(input: MailInput): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function sendMail(input: MailInput): Promise<{ ok: true; queued?: boolean; delivered?: boolean } | { ok: false; error: string }> {
   if (!smtpConfigured()) {
-    return {
-      ok: false,
-      error: "SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD and SMTP_FROM in Vercel.",
-    };
-  }
-
-  try {
-    const nodemailer = await import("nodemailer");
-    const transporter = nodemailer.default.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT ?? 587),
-      secure: String(process.env.SMTP_SECURE ?? "false") === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+    const queued = await queueEmail({
       to: input.to,
       subject: input.subject,
       text: input.text,
       html: input.html,
+      category: input.category,
+      reference: input.reference,
     });
-
-    return { ok: true };
-  } catch (err) {
-    console.error("[email] send failed", err);
-    return { ok: false, error: "Email could not be sent. Please check SMTP configuration." };
+    if (!queued.ok) return { ok: false, error: queued.error };
+    return {
+      ok: false,
+      error: "Email queued — SMTP is not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASSWORD and SMTP_FROM in Vercel.",
+    };
   }
+
+  const result = await queueEmail({
+    to: input.to,
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
+    category: input.category,
+    reference: input.reference,
+  });
+
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, queued: true, delivered: result.delivered };
 }
 
 export function founderEmail() {
@@ -65,6 +62,8 @@ export async function sendApplicationReceivedEmail(input: {
   ownerName: string;
 }) {
   return sendMail({
+    category: "provider_application",
+    reference: input.businessName,
     to: input.to,
     subject: "We received your LocalFix SA application 🎉",
     text: [
@@ -117,6 +116,8 @@ export async function sendJobConfirmationEmail(input: {
       : `We're matching your request to verified professionals near ${where} and will notify them the moment one is available.`;
 
   return sendMail({
+    category: "job",
+    reference: input.reference,
     to: input.to,
     subject: `✅ Job request confirmed — ${input.reference}`,
     text: [
@@ -181,6 +182,8 @@ export async function sendJobCardAwaitingCustomerEmail(input: {
 }) {
   const name = input.customerName.split(/\s+/)[0] || "there";
   return sendMail({
+    category: "job_card",
+    reference: input.jobReference,
     to: input.to,
     subject: `Signature required — LocalFix job card ${input.jobReference}`,
     text: `Hi ${name},\n\nYour LocalFix SA job card is ready for review and signature. The provider has recorded the work completed and signed independently.\n\nReview and sign it here: ${baseUrl()}/job-cards/${input.jobId}\n\nSigning confirms that you reviewed and acknowledge the completion information.\n\nThe LocalFix SA team`,
@@ -195,6 +198,8 @@ export async function sendJobCardCustomerSignedEmail(input: {
   jobId: number;
 }) {
   return sendMail({
+    category: "job_card",
+    reference: input.jobReference,
     to: input.to,
     subject: `Customer signed job card — ${input.jobReference}`,
     text: `Hi ${input.providerName},\n\nYour LocalFix SA job card has been signed by the customer. The job is now officially completed and the locked Job Card is available.\n\nView/download: ${baseUrl()}/job-cards/${input.jobId}\n\nThe LocalFix SA team`,
@@ -211,6 +216,8 @@ export async function sendJobCardCompletedEmail(input: {
 }) {
   const name = input.recipientName.split(/\s+/)[0] || "there";
   return sendMail({
+    category: "job_card",
+    reference: input.documentReference,
     to: input.to,
     subject: `Completed — signed LocalFix Job Card ${input.jobReference}`,
     text: `Hi ${name},\n\nBoth electronic signatures are complete. Your LocalFix SA job is now completed and the signed Job Card is locked.\n\nDocument: ${input.documentReference}\nView: ${baseUrl()}/job-cards/${input.jobId}\nDownload PDF: ${baseUrl()}/api/job-cards/${input.jobId}/pdf\n\nThank you for using LocalFix SA.\nThe LocalFix SA team`,
@@ -259,6 +266,8 @@ export async function sendProviderDecisionEmail(input: {
   const m = meta[input.decision];
 
   return sendMail({
+    category: "provider_application",
+    reference: input.businessName,
     to: input.to,
     subject: m.subject,
     text: [
