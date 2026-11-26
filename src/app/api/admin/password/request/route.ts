@@ -71,6 +71,8 @@ export async function POST(request: Request) {
   ].join("\n");
 
   const mail = await sendMail({
+    category: "password",
+    reference: `admin-reset:${admin.id}`,
     to,
     subject,
     text,
